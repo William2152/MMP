@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "774238444002",
+    "project_id": "healthpro-mmp",
+    "storage_bucket": "healthpro-mmp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:774238444002:android:c146b408e600bc185781bb",
+        "android_client_info": {
+          "package_name": "com.example.health_pro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAylOyG17UkQZkQ5SIzrjT4v0UBgWtq0Ko"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,23 +1,48 @@
-import 'package:flutter/material.dart';
-import 'package:health_pro/screens/nutrition_counter_screen.dart';
+// lib/main.dart
 
-void main() {
-  runApp(const MyApp());
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_pro/screens/home_screen.dart';
+import 'package:health_pro/screens/login_screen.dart';
+import 'blocs/auth/auth_bloc.dart';
+import 'repositories/auth_repository.dart';
+import 'screens/register_screen.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AuthRepository _authRepository = AuthRepository();
 
-  // This widget is the root of your application.
+  MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthBloc>(
+          create: (context) => AuthBloc(_authRepository),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'HealthPro App',
+        theme: ThemeData(
+          primaryColor: const Color(0xFF2D5A27),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF2D5A27),
+          ),
+        ),
+        initialRoute: '/login',
+        routes: {
+          '/login': (context) => const LoginScreen(),
+          '/register': (context) => const RegisterScreen(),
+          '/home': (context) => const HomeScreen(),
+        },
       ),
-      home: NutritionCounterScreen(),
     );
   }
 }
