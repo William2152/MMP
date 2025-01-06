@@ -4,21 +4,23 @@ class CustomBottomBar extends StatefulWidget {
   final Color backgroundColor;
   final Color selectedColor;
   final Color unselectedColor;
+  final int currentIndex;
+  final void Function(int index, String route) onNavigate;
 
   const CustomBottomBar({
-    Key? key,
+    super.key,
+    required this.currentIndex,
+    required this.onNavigate,
     this.backgroundColor = const Color(0xFFE3F4E9),
     this.selectedColor = const Color(0xFF2D5A27),
-    this.unselectedColor = Colors.black54,
-  }) : super(key: key);
+    this.unselectedColor = Colors.grey,
+  });
 
   @override
   State<CustomBottomBar> createState() => _CustomBottomBarState();
 }
 
 class _CustomBottomBarState extends State<CustomBottomBar> {
-  int _selectedIndex = 0;
-
   final List<Map<String, dynamic>> _navigationItems = [
     {
       'icon': Icons.home,
@@ -27,18 +29,18 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
     },
     {
       'icon': Icons.show_chart,
-      'label': 'Nutrition',
-      'route': '/nutrition',
+      'label': 'Activity',
+      'route': '/activity',
     },
     {
       'icon': Icons.schedule,
-      'label': 'Schedule',
-      'route': '/schedule',
+      'label': 'Food Log',
+      'route': '/food_log',
     },
     {
       'icon': Icons.person,
-      'label': 'Profile',
-      'route': '/profile',
+      'label': 'Account',
+      'route': '/account',
     },
   ];
 
@@ -83,17 +85,14 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
               // Adjust index for items after logo
               final itemIndex = index > middleIndex ? index - 1 : index;
               final item = _navigationItems[itemIndex];
-              final isSelected = _selectedIndex == itemIndex;
+              final isSelected = widget.currentIndex == itemIndex;
 
               return Expanded(
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () {
-                      setState(() {
-                        _selectedIndex = itemIndex;
-                      });
-                      Navigator.pushNamed(context, item['route']);
+                      widget.onNavigate(itemIndex, item['route']);
                     },
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,

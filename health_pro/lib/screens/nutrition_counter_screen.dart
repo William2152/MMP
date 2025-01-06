@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class NutritionCounterScreen extends StatefulWidget {
-  const NutritionCounterScreen({Key? key}) : super(key: key);
+  const NutritionCounterScreen({super.key});
 
   @override
   _NutritionCounterScreenState createState() => _NutritionCounterScreenState();
@@ -190,14 +190,14 @@ class NutritionCard extends StatelessWidget {
   final Function(String)? onServingSizeChanged;
 
   const NutritionCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.servingSize,
     required this.nutritionFacts,
     this.showAddButton = false,
     this.showRemoveButton = false,
     this.onServingSizeChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
