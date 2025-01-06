@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_pro/widgets/custom_bottom_bar.dart';
 import '../blocs/auth/auth_bloc.dart';
 import '../blocs/auth/auth_event.dart';
 import '../blocs/auth/auth_state.dart';
@@ -12,10 +13,10 @@ class HomeScreen extends StatelessWidget {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthUnauthenticated) {
-          // Redirect ke halaman login ketika berhasil logout
+          // Redirect ke halaman landing ketika berhasil logout
           Navigator.pushNamedAndRemoveUntil(
             context,
-            '/login',
+            '/',
             (route) => false,
           );
         }
@@ -53,6 +54,11 @@ class HomeScreen extends StatelessWidget {
                     // Add more user data here
                   ],
                 ),
+              ),
+              bottomNavigationBar: CustomBottomBar(
+                backgroundColor: Colors.white,
+                selectedColor: Colors.blue,
+                unselectedColor: Colors.grey,
               ),
             );
           }

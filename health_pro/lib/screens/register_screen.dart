@@ -326,6 +326,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         GestureDetector(
                           onTap: () {
+                            context.read<AuthBloc>().add(ResetAuthError());
                             Navigator.pushReplacementNamed(context, '/login');
                           },
                           child: const Text(
@@ -339,6 +340,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),

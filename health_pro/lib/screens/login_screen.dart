@@ -217,6 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         GestureDetector(
                           onTap: () {
+                            context.read<AuthBloc>().add(ResetAuthError());
                             Navigator.pushReplacementNamed(
                                 context, '/register');
                           },

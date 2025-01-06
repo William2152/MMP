@@ -4,7 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_pro/screens/home_screen.dart';
+import 'package:health_pro/screens/landing_screen.dart';
 import 'package:health_pro/screens/login_screen.dart';
+import 'package:health_pro/screens/nutrition_counter_screen.dart';
 import 'blocs/auth/auth_bloc.dart';
 import 'repositories/auth_repository.dart';
 import 'screens/register_screen.dart';
@@ -36,11 +38,13 @@ class MyApp extends StatelessWidget {
             seedColor: const Color(0xFF2D5A27),
           ),
         ),
-        initialRoute: '/login',
+        initialRoute: '/',
         routes: {
+          '/': (context) => const LandingScreen(),
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegisterScreen(),
           '/home': (context) => const HomeScreen(),
+          '/nutrition': (context) => const NutritionCounterScreen(),
         },
       ),
     );

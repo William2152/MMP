@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 
-class NutritionCounterScreen extends StatelessWidget {
+class NutritionCounterScreen extends StatefulWidget {
   const NutritionCounterScreen({Key? key}) : super(key: key);
+
+  @override
+  _NutritionCounterScreenState createState() => _NutritionCounterScreenState();
+}
+
+class _NutritionCounterScreenState extends State<NutritionCounterScreen> {
+  String _pizzaServingSize = '100';
+  String _mashedPotatoServingSize = '100';
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +66,7 @@ class NutritionCounterScreen extends StatelessWidget {
                   if (true) // Replace with actual search state
                     NutritionCard(
                       title: 'Pizza',
-                      servingSize: '100',
+                      servingSize: _pizzaServingSize,
                       nutritionFacts: const {
                         'Calories': '262.9',
                         'Total Fat': '9.8g',
@@ -70,6 +78,11 @@ class NutritionCounterScreen extends StatelessWidget {
                         'Fiber': '2.3g',
                       },
                       showAddButton: true,
+                      onServingSizeChanged: (value) {
+                        setState(() {
+                          _pizzaServingSize = value;
+                        });
+                      },
                     ),
 
                   const SizedBox(height: 20),
@@ -113,7 +126,7 @@ class NutritionCounterScreen extends StatelessWidget {
                   // Added Foods List
                   NutritionCard(
                     title: 'Mashed potato',
-                    servingSize: '100',
+                    servingSize: _mashedPotatoServingSize,
                     nutritionFacts: const {
                       'Calories': '113',
                       'Total Fat': '4.2g',
@@ -125,6 +138,11 @@ class NutritionCounterScreen extends StatelessWidget {
                       'Fiber': '1.5g',
                     },
                     showRemoveButton: true,
+                    onServingSizeChanged: (value) {
+                      setState(() {
+                        _mashedPotatoServingSize = value;
+                      });
+                    },
                   ),
                 ],
               ),
@@ -169,6 +187,7 @@ class NutritionCard extends StatelessWidget {
   final Map<String, String> nutritionFacts;
   final bool showAddButton;
   final bool showRemoveButton;
+  final Function(String)? onServingSizeChanged;
 
   const NutritionCard({
     Key? key,
@@ -177,6 +196,7 @@ class NutritionCard extends StatelessWidget {
     required this.nutritionFacts,
     this.showAddButton = false,
     this.showRemoveButton = false,
+    this.onServingSizeChanged,
   }) : super(key: key);
 
   @override
@@ -209,9 +229,19 @@ class NutritionCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Text(
-                      servingSize,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    SizedBox(
+                      width: 40,
+                      child: TextField(
+                        controller: TextEditingController(text: servingSize),
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onChanged: onServingSizeChanged,
+                      ),
                     ),
                     const Text(' g'),
                   ],
@@ -226,18 +256,38 @@ class NutritionCard extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Wrap(
-              spacing: 20,
-              runSpacing: 10,
-              children: nutritionFacts.entries.map((entry) {
-                return SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.35,
-                  child: Text(
-                    '${entry.key}: ${entry.value}',
-                    style: const TextStyle(fontSize: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: nutritionFacts.entries.take(4).map((entry) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text(
+                          '${entry.key}: ${entry.value}',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      );
+                    }).toList(),
                   ),
-                );
-              }).toList(),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: nutritionFacts.entries.skip(4).map((entry) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text(
+                          '${entry.key}: ${entry.value}',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
             ),
           ),
           if (showAddButton || showRemoveButton)
