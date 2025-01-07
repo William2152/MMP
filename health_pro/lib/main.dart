@@ -39,7 +39,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primaryColor: const Color(0xFF2D5A27),
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF2D5A27),
+            seedColor: const Color(0xFFE3F4E9),
           ),
         ),
         initialRoute: '/',
