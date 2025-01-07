@@ -29,7 +29,7 @@ class HomeScreen extends StatelessWidget {
             children: [
               _buildFoodLogFocus(),
               const SizedBox(height: 24),
-              _buildDailyStats(),
+              _buildDailyStats(context),
             ],
           ),
         ),
@@ -130,7 +130,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDailyStats() {
+  Widget _buildDailyStats(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -155,12 +155,17 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: _buildStatCard(
-                'Water',
-                '2.5',
-                'glasses',
-                Icons.water_drop,
-                Colors.lightBlue,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, '/water_reminder');
+                },
+                child: _buildStatCard(
+                  'Water',
+                  '2.5',
+                  'glasses',
+                  Icons.water_drop,
+                  Colors.lightBlue,
+                ),
               ),
             ),
           ],

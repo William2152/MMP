@@ -10,6 +10,7 @@ class NavigationWrapper extends StatefulWidget {
     '/activity',
     '/food_log',
     '/account',
+    '/water_reminder'
   ];
 
   const NavigationWrapper({

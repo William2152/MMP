@@ -10,6 +10,7 @@ import 'package:health_pro/screens/home_screen.dart';
 import 'package:health_pro/screens/landing_screen.dart';
 import 'package:health_pro/screens/login_screen.dart';
 import 'package:health_pro/screens/nutrition_counter_screen.dart';
+import 'package:health_pro/screens/water_reminder_screen.dart';
 import 'package:health_pro/widgets/navigation_wrapper.dart';
 import 'blocs/auth/auth_bloc.dart';
 import 'repositories/auth_repository.dart';
@@ -62,6 +63,10 @@ class MyApp extends StatelessWidget {
               ),
           '/food_log': (context) => NavigationWrapper(
                 screen: const FoodLogScreen(),
+                showBottomBar: true,
+              ),
+          '/water_reminder': (context) => NavigationWrapper(
+                screen: const WaterReminderScreen(),
                 showBottomBar: true,
               ),
         },
