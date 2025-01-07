@@ -157,7 +157,7 @@ class HomeScreen extends StatelessWidget {
             Expanded(
               child: GestureDetector(
                 onTap: () {
-                  Navigator.pushNamed(context, '/water_reminder');
+                  Navigator.pushNamed(context, '/water');
                 },
                 child: _buildStatCard(
                   'Water',

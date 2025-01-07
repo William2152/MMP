@@ -33,6 +33,11 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
       'route': '/activity',
     },
     {
+      'icon': Icons.water_drop,
+      'label': 'Water',
+      'route': '/water',
+    },
+    {
       'icon': Icons.schedule,
       'label': 'Food Log',
       'route': '/food_log',
@@ -46,9 +51,6 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
 
   @override
   Widget build(BuildContext context) {
-    final itemCount = _navigationItems.length + 1; // +1 for center logo
-    final middleIndex = itemCount ~/ 2;
-
     return Container(
       decoration: BoxDecoration(
         color: widget.backgroundColor,
@@ -66,26 +68,9 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(itemCount, (index) {
-              // Center logo
-              if (index == middleIndex) {
-                return SizedBox(
-                  width: 60,
-                  height: 60,
-                  child: Center(
-                    child: Image.asset(
-                      'assets/images/healthpro_logo.png',
-                      fit: BoxFit.fitWidth,
-                      width: 50,
-                    ),
-                  ),
-                );
-              }
-
-              // Adjust index for items after logo
-              final itemIndex = index > middleIndex ? index - 1 : index;
-              final item = _navigationItems[itemIndex];
-              final isSelected = widget.currentIndex == itemIndex;
+            children: _navigationItems.map((item) {
+              final int itemIndex = _navigationItems.indexOf(item);
+              final bool isSelected = widget.currentIndex == itemIndex;
 
               return Expanded(
                 child: Material(
@@ -122,7 +107,7 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
                   ),
                 ),
               );
-            }),
+            }).toList(),
           ),
         ),
       ),

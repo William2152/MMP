@@ -1,15 +1,6 @@
-// /lib/screens/water_reminder_screen.dart
-
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:health_pro/blocs/water/water_state.dart';
 import 'package:liquid_progress_indicator_v2/liquid_progress_indicator.dart';
 import 'dart:math' as math;
-import '../blocs/water/water_bloc.dart';
-import '../blocs/water/water_event.dart';
-// import '../models/water_settings_model.dart';
-import '../models/water_consumption_model.dart';
 
 class WaterReminderScreen extends StatefulWidget {
   const WaterReminderScreen({super.key});
@@ -18,197 +9,101 @@ class WaterReminderScreen extends StatefulWidget {
   _WaterReminderScreenState createState() => _WaterReminderScreenState();
 }
 
-class _WaterReminderScreenState extends State<WaterReminderScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  int selectedVolumeIndex = 1;
+class _WaterReminderScreenState extends State<WaterReminderScreen> {
+  int selectedVolumeIndex = 1; // 500ml selected by default
   int customVolume = 250;
-  int reminderInterval = 30;
+  int reminderInterval = 30; // minutes
 
   final List<Map<String, dynamic>> volumeOptions = [
-    {
-      'volume': 250,
-      'icon': Icons.water_drop,
-      'type': 'water',
-      'label': 'Water'
-    },
-    {
-      'volume': 500,
-      'icon': Icons.local_drink,
-      'type': 'bottle',
-      'label': 'Bottle'
-    },
-    {'volume': 180, 'icon': Icons.coffee, 'type': 'cup', 'label': 'Cup'},
-    {'volume': 250, 'icon': Icons.blender, 'type': 'custom', 'label': 'Custom'},
+    {'volume': 250, 'icon': Icons.water_drop, 'label': 'Water'},
+    {'volume': 500, 'icon': Icons.local_drink, 'label': 'Bottle'},
+    {'volume': 180, 'icon': Icons.coffee, 'label': 'Cup'},
+    {'volume': 250, 'icon': Icons.blender, 'label': 'Custom'},
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    // Load initial data
-    context.read<WaterBloc>().add(LoadWaterSettings());
-    // context.read<WaterBloc>().add(LoadTodayConsumption());
-    // Load weekly history
-    final now = DateTime.now();
-    context.read<WaterBloc>().add(FetchWaterHistory(
-          startDate: now.subtract(const Duration(days: 7)),
-          endDate: now,
-        ));
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return BlocConsumer<WaterBloc, WaterState>(
-      listener: (context, state) {
-        if (state is WaterError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
-        }
-      },
-      builder: (context, state) {
-        if (state is WaterLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () => Navigator.pop(context),
-            ),
-            title: const Text(
-              'Water Reminder',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            bottom: TabBar(
-              controller: _tabController,
-              tabs: const [
-                Tab(text: 'Today'),
-                Tab(text: 'Analytics'),
-              ],
-            ),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Water Reminder',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
           ),
-          body: TabBarView(
-            controller: _tabController,
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTodayView(state),
-              _buildAnalyticsView(state),
+              const Text(
+                'Current Hydration',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+              ),
+              const SizedBox(height: 32),
+              _buildHydrationProgress(),
+              const SizedBox(height: 40),
+              _buildVolumeSelection(),
+              const SizedBox(height: 40),
+              _buildReminderSettings(),
             ],
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildTodayView(WaterState state) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Current Hydration',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
-            ),
-            const SizedBox(height: 32),
-            if (state is WaterConsumptionLoaded)
-              _buildHydrationProgress(state)
-            else
-              const Center(child: CircularProgressIndicator()),
-            const SizedBox(height: 40),
-            _buildVolumeSelection(),
-            const SizedBox(height: 40),
-            _buildReminderSettings(),
-          ],
         ),
       ),
     );
   }
 
-  Widget _buildAnalyticsView(WaterState state) {
-    if (state is WaterHistoryLoaded) {
-      return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Weekly Overview',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 300,
-              child: LineChart(
-                _createLineChartData(state.history),
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildWeeklyStats(state.history),
-          ],
-        ),
-      );
-    }
-    return const Center(child: CircularProgressIndicator());
-  }
-
-  Widget _buildHydrationProgress(WaterConsumptionLoaded state) {
-    final percentage =
-        state.goal > 0 ? (state.consumption / state.goal) * 100 : 0.0;
+  Widget _buildHydrationProgress() {
     return Center(
       child: SizedBox(
         height: 240,
         width: 200,
         child: LiquidCustomProgressIndicator(
           direction: Axis.vertical,
-          value: percentage.clamp(0, 100) / 100,
+          value: 0.84,
           center: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+            children: const [
               Text(
-                '${percentage.toStringAsFixed(1)}%',
-                style: const TextStyle(
+                '84%',
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
               Text(
-                '${state.consumption.toStringAsFixed(0)} ml',
-                style: const TextStyle(
+                '1,290 ml',
+                style: TextStyle(
                   fontSize: 18,
                   color: Colors.white,
                 ),
               ),
-              if (state.consumption == 0)
-                const Text(
-                  'Start drinking water!',
-                  style: TextStyle(fontSize: 14, color: Colors.white70),
-                )
-              else
-                Text(
-                  '-${(state.goal - state.consumption).toStringAsFixed(0)} ml',
-                  style: const TextStyle(fontSize: 14, color: Colors.white70),
+              Text(
+                '-603 ml',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white70,
                 ),
+              ),
             ],
           ),
-          shapePath: _buildWaterDropPath(const Size(200, 240)),
+          shapePath: _buildWaterDropPath(Size(200, 240)),
           backgroundColor: Colors.blue.withOpacity(0.1),
           valueColor: AlwaysStoppedAnimation(Colors.blue.shade400),
         ),
@@ -216,7 +111,6 @@ class _WaterReminderScreenState extends State<WaterReminderScreen>
     );
   }
 
-  // Previous methods remain the same: _buildWaterDropPath, _buildVolumeSelection, etc.
   Path _buildWaterDropPath(Size size) {
     final path = Path()
       ..moveTo(size.width / 2, size.height) // Start at the bottom center
@@ -551,121 +445,6 @@ class _WaterReminderScreenState extends State<WaterReminderScreen>
             onPressed: () => Navigator.pop(context),
             child: const Text('Save'),
           ),
-        ],
-      ),
-    );
-  }
-
-  // Add new methods for analytics functionality
-  LineChartData _createLineChartData(List<WaterConsumptionModel> history) {
-    // Group consumption by day
-    final Map<DateTime, double> dailyConsumption = {};
-    for (var consumption in history) {
-      final date = DateTime(
-        consumption.timestamp.year,
-        consumption.timestamp.month,
-        consumption.timestamp.day,
-      );
-      dailyConsumption[date] =
-          (dailyConsumption[date] ?? 0) + consumption.amount;
-    }
-
-    final spots = dailyConsumption.entries.map((entry) {
-      return FlSpot(
-        entry.key.millisecondsSinceEpoch.toDouble(),
-        entry.value,
-      );
-    }).toList();
-
-    return LineChartData(
-      gridData: FlGridData(show: false),
-      titlesData: FlTitlesData(
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (value, meta) {
-              final date = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-              return Text(
-                '${date.day}/${date.month}',
-                style: const TextStyle(fontSize: 10),
-              );
-            },
-          ),
-        ),
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            getTitlesWidget: (value, meta) {
-              return Text(
-                '${value.toInt()}ml',
-                style: const TextStyle(fontSize: 10),
-              );
-            },
-          ),
-        ),
-      ),
-      lineBarsData: [
-        LineChartBarData(
-          spots: spots,
-          isCurved: true,
-          color: Colors.blue,
-          barWidth: 3,
-          dotData: FlDotData(show: true),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWeeklyStats(List<WaterConsumptionModel> history) {
-    double totalConsumption = 0;
-    double averageConsumption = 0;
-    double bestDay = 0;
-
-    // Calculate statistics
-    if (history.isNotEmpty) {
-      totalConsumption = history.fold(0, (sum, item) => sum + item.amount);
-      averageConsumption = totalConsumption / 7;
-
-      // Group by day to find best day
-      final Map<DateTime, double> dailyConsumption = {};
-      for (var consumption in history) {
-        final date = DateTime(
-          consumption.timestamp.year,
-          consumption.timestamp.month,
-          consumption.timestamp.day,
-        );
-        dailyConsumption[date] =
-            (dailyConsumption[date] ?? 0) + consumption.amount;
-      }
-      bestDay = dailyConsumption.values.reduce(math.max);
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildStatRow('Total Consumption',
-                '${totalConsumption.toStringAsFixed(0)} ml'),
-            _buildStatRow(
-                'Daily Average', '${averageConsumption.toStringAsFixed(0)} ml'),
-            _buildStatRow('Best Day', '${bestDay.toStringAsFixed(0)} ml'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 16)),
-          Text(value,
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ],
       ),
     );

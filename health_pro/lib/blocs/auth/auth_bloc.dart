@@ -1,3 +1,5 @@
+// lib/blocs/auth/auth_bloc.dart
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../repositories/auth_repository.dart';
 import 'auth_event.dart';

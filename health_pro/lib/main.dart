@@ -14,6 +14,8 @@ import 'package:health_pro/screens/water_reminder_screen.dart';
 import 'package:health_pro/widgets/navigation_wrapper.dart';
 import 'blocs/auth/auth_bloc.dart';
 import 'repositories/auth_repository.dart';
+import 'blocs/water/water_bloc.dart';
+import 'repositories/water_repository.dart';
 import 'screens/register_screen.dart';
 
 void main() async {
@@ -24,7 +26,7 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final AuthRepository _authRepository = AuthRepository();
-
+  final WaterRepository _waterRepository = WaterRepository();
   MyApp({super.key});
 
   @override
@@ -34,6 +36,9 @@ class MyApp extends StatelessWidget {
         BlocProvider<AuthBloc>(
           create: (context) => AuthBloc(_authRepository),
         ),
+        BlocProvider<WaterBloc>(
+          create: (context) => WaterBloc(_waterRepository),
+        )
       ],
       child: MaterialApp(
         title: 'HealthPro App',
@@ -65,7 +70,7 @@ class MyApp extends StatelessWidget {
                 screen: const FoodLogScreen(),
                 showBottomBar: true,
               ),
-          '/water_reminder': (context) => NavigationWrapper(
+          '/water': (context) => NavigationWrapper(
                 screen: const WaterReminderScreen(),
                 showBottomBar: true,
               ),
