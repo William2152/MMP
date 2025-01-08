@@ -1,128 +1,90 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:pedometer/pedometer.dart';
 import 'dart:async';
-import 'package:permission_handler/permission_handler.dart';
 
-class _ActivityTracker extends StatefulWidget {
-  const _ActivityTracker({Key? key}) : super(key: key);
+class ActivityTrackerScreen extends StatefulWidget {
+  const ActivityTrackerScreen({Key? key}) : super(key: key);
 
   @override
-  _ActivityTrackerState createState() => _ActivityTrackerState();
+  _ActivityTrackerScreenState createState() => _ActivityTrackerScreenState();
 }
 
-class _ActivityTrackerState extends State<_ActivityTracker> {
-  double _distance = 0.0; // Total jarak dalam meter
-  double _calories = 0.0; // Total kalori terbakar
+class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
   int _stepCount = 0; // Langkah berjalan sejak tracking dimulai
   int _initialStepCount = 0; // Langkah awal dari perangkat
-  int _targetSteps = 10000; // Target langkah
+  double _distance = 0.0; // Total jarak dalam kilometer
+  double _calories = 0.0; // Total kalori terbakar
+  double _stepLength = 0.78; // Panjang langkah rata-rata dalam meter
   double _weight = 70.0; // Berat badan pengguna dalam kg (bisa diubah)
-  List<Position> _positions = []; // Menyimpan lokasi pengguna
-  StreamSubscription<Position>? _positionStream;
-  StreamSubscription<StepCount>? _stepStream;
+  int _targetSteps = 10000; // Target langkah
+  DateTime _lastUpdatedDate = DateTime.now(); // Tanggal terakhir diperbarui
 
-  bool _isTracking = false; // Menandai apakah tracking aktif
+  StreamSubscription<StepCount>? _stepStream;
 
   @override
   void initState() {
     super.initState();
+    _startTracking();
   }
 
-  Future<void> _startTracking() async {
-    // Minta izin lokasi
-    LocationPermission permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      print('Permission denied for location.');
-      return;
-    } else {
-      print('Location permission granted.');
-    }
-
-    // Minta izin activityRecognition
-    final status = await Permission.activityRecognition.request();
-    if (!status.isGranted) {
-      print('Permission denied for activity recognition.');
-      return;
-    } else {
-      print('Activity recognition permission granted.');
-    }
-
-    setState(() {
-      _isTracking = true;
-      _distance = 0.0;
-      _stepCount = 0;
-      _calories = 0.0;
-      _positions.clear();
-    });
-
-    // Mulai pelacakan langkah
+  void _startTracking() {
     _stepStream = Pedometer.stepCountStream.listen((StepCount event) {
+      final currentDate = DateTime.now();
+
+      if (_lastUpdatedDate.day != currentDate.day ||
+          _lastUpdatedDate.month != currentDate.month ||
+          _lastUpdatedDate.year != currentDate.year) {
+        // Reset data jika pergantian hari terdeteksi
+        _resetData();
+      }
+
       if (_initialStepCount == 0) {
         // Simpan langkah awal
         _initialStepCount = event.steps;
-        print('Initial step count: $_initialStepCount');
       }
 
       setState(() {
         // Hitung langkah relatif terhadap langkah awal
         _stepCount = event.steps - _initialStepCount;
-        print('Steps updated: $_stepCount');
+
+        // Hitung jarak berdasarkan langkah
+        _distance = (_stepCount * _stepLength) / 1000; // Konversi ke kilometer
+
+        // Hitung kalori berdasarkan langkah
         _calculateCalories();
+
+        // Perbarui tanggal terakhir
+        _lastUpdatedDate = currentDate;
       });
     }, onError: (error) {
       print('Step tracking error: $error');
     });
-
-    // Mulai pelacakan posisi
-    _positionStream = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
-      ),
-    ).listen((Position position) {
-      setState(() {
-        if (_positions.isNotEmpty) {
-          // Hitung jarak berdasarkan posisi terbaru
-          _distance += Geolocator.distanceBetween(
-            _positions.last.latitude,
-            _positions.last.longitude,
-            position.latitude,
-            position.longitude,
-          );
-          print('Distance updated: $_distance meters');
-          _calculateCalories();
-        }
-        _positions.add(position);
-      });
-    });
   }
 
-  void _stopTracking() {
+  void _resetData() {
     setState(() {
-      _isTracking = false;
-      _initialStepCount = 0; // Reset langkah awal saat berhenti tracking
+      _stepCount = 0;
+      _initialStepCount = 0;
+      _distance = 0.0;
+      _calories = 0.0;
     });
-
-    _positionStream?.cancel();
-    _stepStream?.cancel();
-
-    print('Tracking stopped. Total distance: ${_distance / 1000} km');
+    print("Data reset at midnight.");
   }
 
   void _calculateCalories() {
+    // Hitung kalori dengan pendekatan langkah
     double caloriesPerStep = _weight * 0.0005;
-    double caloriesPerKm = _weight * 1.036;
-
     double caloriesFromSteps = _stepCount * caloriesPerStep;
-    double distanceInKm = _distance / 1000; // Konversi jarak ke kilometer
-    double caloriesFromDistance = distanceInKm * caloriesPerKm;
 
     setState(() {
-      _calories =
-          (caloriesFromSteps + caloriesFromDistance) / 2; // Rata-rata kalori
+      _calories = caloriesFromSteps;
     });
+  }
+
+  @override
+  void dispose() {
+    _stepStream?.cancel();
+    super.dispose();
   }
 
   @override
@@ -218,35 +180,13 @@ class _ActivityTrackerState extends State<_ActivityTracker> {
                 ),
                 InfoCard(
                   title: 'Distance',
-                  value: '${(_distance / 1000).toStringAsFixed(2)} km',
+                  value: '${_distance.toStringAsFixed(2)} km',
                   icon: Icons.directions_walk,
                 ),
               ],
             ),
           ),
           const Spacer(),
-          // Tombol Start/Stop Tracking
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 40),
-              ),
-              onPressed: _isTracking ? _stopTracking : _startTracking,
-              child: Text(
-                _isTracking ? 'Stop Tracking' : 'Start Tracking',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
