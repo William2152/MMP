@@ -3,14 +3,12 @@ class WaterConsumptionModel {
   final String userId;
   final DateTime timestamp;
   final double amount; // in ml
-  final String type; // 'water', 'bottle', 'cup', 'custom'
 
   WaterConsumptionModel({
     required this.id,
     required this.userId,
     required this.timestamp,
     required this.amount,
-    required this.type,
   });
 
   Map<String, dynamic> toJson() {
@@ -19,7 +17,6 @@ class WaterConsumptionModel {
       'userId': userId,
       'timestamp': timestamp.toIso8601String(),
       'amount': amount,
-      'type': type,
     };
   }
 
@@ -29,7 +26,6 @@ class WaterConsumptionModel {
       userId: json['userId'],
       timestamp: DateTime.parse(json['timestamp']),
       amount: json['amount'].toDouble(),
-      type: json['type'],
     );
   }
 }

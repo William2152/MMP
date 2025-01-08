@@ -3,11 +3,11 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:health_pro/blocs/water/water_state.dart';
+import 'package:health_pro/blocs/water_old/water_state_old.dart';
 import 'package:liquid_progress_indicator_v2/liquid_progress_indicator.dart';
 import 'dart:math' as math;
-import '../blocs/water/water_bloc.dart';
-import '../blocs/water/water_event.dart';
+import '../blocs/water_old/water_bloc_old.dart';
+import '../blocs/water_old/water_event_old.dart';
 // import '../models/water_settings_model.dart';
 import '../models/water_consumption_model.dart';
 

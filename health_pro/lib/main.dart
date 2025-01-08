@@ -11,12 +11,14 @@ import 'package:health_pro/screens/landing_screen.dart';
 import 'package:health_pro/screens/login_screen.dart';
 import 'package:health_pro/screens/nutrition_counter_screen.dart';
 import 'package:health_pro/screens/water_reminder_screen.dart';
+import 'package:health_pro/screens/water_screen.dart';
 import 'package:health_pro/widgets/navigation_wrapper.dart';
 import 'blocs/auth/auth_bloc.dart';
 import 'repositories/auth_repository.dart';
-import 'blocs/water/water_bloc.dart';
-import 'repositories/water_repository.dart';
+import 'blocs/water_old/water_bloc_old.dart';
+import 'repositories/water_repository_old.dart';
 import 'screens/register_screen.dart';
+// import 'screens/export.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,8 +72,12 @@ class MyApp extends StatelessWidget {
                 screen: const FoodLogScreen(),
                 showBottomBar: true,
               ),
-          '/water': (context) => NavigationWrapper(
+          '/hydration': (context) => NavigationWrapper(
                 screen: const WaterReminderScreen(),
+                showBottomBar: true,
+              ),
+          '/water': (context) => NavigationWrapper(
+                screen: const WaterScreen(),
                 showBottomBar: true,
               ),
         },

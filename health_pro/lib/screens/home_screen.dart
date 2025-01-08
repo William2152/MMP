@@ -157,7 +157,7 @@ class HomeScreen extends StatelessWidget {
             Expanded(
               child: GestureDetector(
                 onTap: () {
-                  Navigator.pushNamed(context, '/water');
+                  Navigator.pushReplacementNamed(context, '/water');
                 },
                 child: _buildStatCard(
                   'Water',

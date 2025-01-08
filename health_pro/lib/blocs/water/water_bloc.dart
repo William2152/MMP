@@ -1,196 +1,102 @@
-// lib/blocs/water/water_bloc.dart
-import 'package:firebase_auth/firebase_auth.dart';
+// water_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:health_pro/blocs/water/water_event.dart';
-import 'package:health_pro/blocs/water/water_state.dart';
-import 'package:health_pro/models/water_settings_model.dart';
+import 'package:health_pro/models/water_model.dart';
 import 'package:health_pro/repositories/water_repository.dart';
+import 'package:equatable/equatable.dart';
+
+part 'water_event.dart';
+part 'water_state.dart';
 
 class WaterBloc extends Bloc<WaterEvent, WaterState> {
-  final WaterRepository _waterRepository;
+  final WaterRepository repository;
 
-  WaterBloc(this._waterRepository) : super(WaterInitial()) {
-    on<LogWaterConsumption>(_handleLogWaterConsumption);
-    on<LoadWaterSettings>(_handleLoadWaterSettings);
-    on<FetchWaterHistory>(_handleFetchWaterHistory);
-    on<UpdateDailyGoal>(_handleUpdateDailyGoal);
-    on<UpdateReminderInterval>(_handleUpdateReminderInterval);
-    on<UpdateSelectedVolume>(_handleUpdateSelectedVolume);
-    on<UpdateCustomVolume>(_handleUpdateCustomVolume);
-    on<UpdateRemindersEnabled>(_handleUpdateRemindersEnabled);
-    on<ConfirmWaterIntake>(_handleConfirmWaterIntake);
+  WaterBloc({required this.repository}) : super(const WaterInitial()) {
+    on<LoadWaterDataEvent>(_onLoadWaterData);
+    on<UpdateWaterSettingsEvent>(_onUpdateWaterSettings);
+    on<AddWaterConsumptionEvent>(_onAddWaterConsumption);
   }
 
-  Future<void> _handleLogWaterConsumption(
-      LogWaterConsumption event, Emitter<WaterState> emit) async {
+  Future<void> _onLoadWaterData(
+    LoadWaterDataEvent event,
+    Emitter<WaterState> emit,
+  ) async {
+    emit(const WaterLoadingState());
     try {
-      emit(WaterLoading());
-      await _waterRepository.logWaterConsumption(event.amount, event.type);
-
-      final consumption = await _waterRepository.getTodayConsumption();
-      final settings = await _waterRepository.getWaterSettings();
-
-      if (settings != null) {
-        emit(WaterConsumptionLoaded(consumption, settings.dailyGoal));
-      }
-    } catch (e) {
-      emit(WaterError(e.toString()));
-    }
-  }
-
-  Future<void> _handleLoadWaterSettings(
-      LoadWaterSettings event, Emitter<WaterState> emit) async {
-    try {
-      emit(WaterLoading());
-      final settings = await _waterRepository.getWaterSettings();
-
-      if (settings != null) {
-        emit(WaterSettingsLoaded(settings));
-      } else {
-        final defaultSettings = WaterSettingsModel(
-          userId: FirebaseAuth.instance.currentUser!.uid,
+      final model = await repository.getWaterModel(event.userId);
+      if (model == null) {
+        final defaultModel = WaterModel(
+          userId: event.userId,
           dailyGoal: 2000,
           reminderInterval: 60,
           selectedVolume: 250,
-          customVolume: 350,
           remindersEnabled: true,
         );
-        await _waterRepository.saveWaterSettings(defaultSettings);
-        emit(WaterSettingsLoaded(defaultSettings));
+        await repository.saveWaterModel(defaultModel);
+        await repository.scheduleReminder(defaultModel);
+        emit(WaterLoadedState(model: defaultModel));
+      } else {
+        await repository.scheduleReminder(model);
+        emit(WaterLoadedState(model: model));
       }
     } catch (e) {
-      emit(WaterError(e.toString()));
+      emit(WaterErrorState(message: e.toString()));
     }
   }
 
-  Future<void> _handleUpdateDailyGoal(
-      UpdateDailyGoal event, Emitter<WaterState> emit) async {
-    try {
-      emit(WaterLoading());
-      final settings = await _waterRepository.getWaterSettings();
-      if (settings != null) {
-        final updatedSettings = WaterSettingsModel(
-          userId: settings.userId,
+  Future<void> _onUpdateWaterSettings(
+    UpdateWaterSettingsEvent event,
+    Emitter<WaterState> emit,
+  ) async {
+    if (state is WaterLoadedState) {
+      try {
+        final currentState = state as WaterLoadedState;
+        final updatedModel = currentState.model.copyWith(
           dailyGoal: event.dailyGoal,
-          reminderInterval: settings.reminderInterval,
-          selectedVolume: settings.selectedVolume,
-          customVolume: settings.customVolume,
-          remindersEnabled: settings.remindersEnabled,
-        );
-        await _waterRepository.saveWaterSettings(updatedSettings);
-        emit(WaterSettingsLoaded(updatedSettings));
-      }
-    } catch (e) {
-      emit(WaterError(e.toString()));
-    }
-  }
-
-  Future<void> _handleUpdateReminderInterval(
-      UpdateReminderInterval event, Emitter<WaterState> emit) async {
-    try {
-      emit(WaterLoading());
-      final settings = await _waterRepository.getWaterSettings();
-      if (settings != null) {
-        final updatedSettings = WaterSettingsModel(
-          userId: settings.userId,
-          dailyGoal: settings.dailyGoal,
           reminderInterval: event.reminderInterval,
-          selectedVolume: settings.selectedVolume,
-          customVolume: settings.customVolume,
-          remindersEnabled: settings.remindersEnabled,
-        );
-        await _waterRepository.saveWaterSettings(updatedSettings);
-        emit(WaterSettingsLoaded(updatedSettings));
-      }
-    } catch (e) {
-      emit(WaterError(e.toString()));
-    }
-  }
-
-  Future<void> _handleUpdateSelectedVolume(
-      UpdateSelectedVolume event, Emitter<WaterState> emit) async {
-    try {
-      emit(WaterLoading());
-      final settings = await _waterRepository.getWaterSettings();
-      if (settings != null) {
-        final updatedSettings = WaterSettingsModel(
-          userId: settings.userId,
-          dailyGoal: settings.dailyGoal,
-          reminderInterval: settings.reminderInterval,
           selectedVolume: event.selectedVolume,
-          customVolume: settings.customVolume,
-          remindersEnabled: settings.remindersEnabled,
-        );
-        await _waterRepository.saveWaterSettings(updatedSettings);
-        emit(WaterSettingsLoaded(updatedSettings));
-      }
-    } catch (e) {
-      emit(WaterError(e.toString()));
-    }
-  }
-
-  Future<void> _handleUpdateCustomVolume(
-      UpdateCustomVolume event, Emitter<WaterState> emit) async {
-    try {
-      emit(WaterLoading());
-      await _waterRepository.saveCustomVolume(event.customVolume);
-      add(LoadWaterSettings());
-    } catch (e) {
-      emit(WaterError(e.toString()));
-    }
-  }
-
-  Future<void> _handleUpdateRemindersEnabled(
-      UpdateRemindersEnabled event, Emitter<WaterState> emit) async {
-    try {
-      emit(WaterLoading());
-      final settings = await _waterRepository.getWaterSettings();
-      if (settings != null) {
-        final updatedSettings = WaterSettingsModel(
-          userId: settings.userId,
-          dailyGoal: settings.dailyGoal,
-          reminderInterval: settings.reminderInterval,
-          selectedVolume: settings.selectedVolume,
-          customVolume: settings.customVolume,
+          customVolume: event.customVolume,
           remindersEnabled: event.remindersEnabled,
         );
-        await _waterRepository.saveWaterSettings(updatedSettings);
-        emit(WaterSettingsLoaded(updatedSettings));
+
+        await repository.saveWaterModel(updatedModel);
+        await repository.scheduleReminder(updatedModel);
+        emit(WaterLoadedState(model: updatedModel));
+      } catch (e) {
+        emit(WaterErrorState(message: e.toString()));
       }
-    } catch (e) {
-      emit(WaterError(e.toString()));
     }
   }
 
-  Future<void> _handleFetchWaterHistory(
-      FetchWaterHistory event, Emitter<WaterState> emit) async {
-    try {
-      emit(WaterLoading());
-      final history = await _waterRepository.getConsumptionHistory(
-        event.startDate,
-        event.endDate,
-      );
-      emit(WaterHistoryLoaded(history));
-    } catch (e) {
-      emit(WaterError(e.toString()));
-    }
-  }
-
-  Future<void> _handleConfirmWaterIntake(
-      ConfirmWaterIntake event, Emitter<WaterState> emit) async {
-    try {
-      emit(WaterLoading());
-      final settings = await _waterRepository.getWaterSettings();
-      if (settings != null) {
-        await _waterRepository.logWaterConsumption(
-          settings.selectedVolume,
-          event.type,
+  Future<void> _onAddWaterConsumption(
+    AddWaterConsumptionEvent event,
+    Emitter<WaterState> emit,
+  ) async {
+    if (state is WaterLoadedState) {
+      try {
+        final currentState = state as WaterLoadedState;
+        final today = DateTime(
+          DateTime.now().year,
+          DateTime.now().month,
+          DateTime.now().day,
         );
-        final consumption = await _waterRepository.getTodayConsumption();
-        emit(WaterConsumptionLoaded(consumption, settings.dailyGoal));
+
+        final currentConsumption =
+            currentState.model.dailyConsumption[today] ?? 0;
+        final updatedConsumption =
+            Map<DateTime, double>.from(currentState.model.dailyConsumption);
+        updatedConsumption[today] = currentConsumption + event.amount;
+
+        final updatedModel = currentState.model.copyWith(
+          dailyConsumption: updatedConsumption,
+          lastReminderTime: DateTime.now(),
+        );
+
+        await repository.saveWaterModel(updatedModel);
+        await repository.scheduleReminder(updatedModel);
+        emit(WaterLoadedState(model: updatedModel));
+      } catch (e) {
+        emit(WaterErrorState(message: e.toString()));
       }
-    } catch (e) {
-      emit(WaterError(e.toString()));
     }
   }
 }

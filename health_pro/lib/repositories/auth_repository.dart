@@ -2,7 +2,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:health_pro/models/water_settings_model.dart';
-import 'package:health_pro/repositories/water_repository.dart';
+import 'package:health_pro/repositories/water_repository_old.dart';
 import '../models/user_model.dart';
 
 class AuthRepository {

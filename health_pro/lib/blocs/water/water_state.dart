@@ -1,36 +1,47 @@
-// lib/blocs/water/water_state.dart
-import 'package:health_pro/models/water_consumption_model.dart';
-import 'package:health_pro/models/water_settings_model.dart';
+// water_state.dart
+part of 'water_bloc.dart';
 
-abstract class WaterState {}
+// @immutable
+sealed class WaterState extends Equatable {
+  const WaterState();
 
-class WaterInitial extends WaterState {}
-
-class WaterLoading extends WaterState {}
-
-class WaterSettingsLoaded extends WaterState {
-  final WaterSettingsModel settings;
-
-  WaterSettingsLoaded(this.settings);
+  @override
+  List<Object?> get props => [];
 }
 
-class WaterConsumptionLoaded extends WaterState {
-  final double consumption;
-  final double goal;
-  final double percentage;
-
-  WaterConsumptionLoaded(this.consumption, this.goal)
-      : percentage = (consumption / goal) * 100;
+final class WaterInitial extends WaterState {
+  const WaterInitial();
 }
 
-class WaterError extends WaterState {
+final class WaterLoadingState extends WaterState {
+  const WaterLoadingState();
+}
+
+final class WaterLoadedState extends WaterState {
+  final WaterModel model;
+
+  const WaterLoadedState({required this.model});
+
+  double get todaysConsumption {
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+    return model.dailyConsumption[today] ?? 0;
+  }
+
+  bool get goalAchieved => todaysConsumption >= model.dailyGoal;
+
+  @override
+  List<Object?> get props => [model, todaysConsumption, goalAchieved];
+}
+
+final class WaterErrorState extends WaterState {
   final String message;
 
-  WaterError(this.message);
-}
+  const WaterErrorState({required this.message});
 
-class WaterHistoryLoaded extends WaterState {
-  final List<WaterConsumptionModel> history;
-
-  WaterHistoryLoaded(this.history);
+  @override
+  List<Object?> get props => [message];
 }
