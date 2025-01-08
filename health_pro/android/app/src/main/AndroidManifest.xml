@@ -15,6 +15,12 @@
         android:name="com.ryanheise.androidservice.FlutterBackgroundService"
         android:exported="true"
         />
+        <service
+            android:name="id.flutter.flutter_background_service.BackgroundService"
+            android:exported="true"
+            android:foregroundServiceType="dataSync"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+        />
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pedometer/pedometer.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
+import 'dart:io' show Platform;
 
 class ActivityTrackerScreen extends StatefulWidget {
   const ActivityTrackerScreen({Key? key}) : super(key: key);
@@ -14,9 +16,9 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
   int _initialStepCount = 0; // Langkah awal dari perangkat
   double _distance = 0.0; // Total jarak dalam kilometer
   double _calories = 0.0; // Total kalori terbakar
-  double _stepLength = 0.78; // Panjang langkah rata-rata dalam meter
-  double _weight = 70.0; // Berat badan pengguna dalam kg (bisa diubah)
-  int _targetSteps = 10000; // Target langkah
+  double _stepLength = 0.78; // Panjang langkah rata-rata (meter)
+  double _weight = 70.0; // Berat badan user (kg, bisa diubah)
+  int _targetSteps = 10000; // Target langkah harian
   DateTime _lastUpdatedDate = DateTime.now(); // Tanggal terakhir diperbarui
 
   StreamSubscription<StepCount>? _stepStream;
@@ -24,36 +26,62 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
   @override
   void initState() {
     super.initState();
-    _startTracking();
+    _requestActivityRecognitionPermission();
   }
 
+  /// Minta izin ACTIVITY_RECOGNITION di Android (API 29 ke atas)
+  Future<void> _requestActivityRecognitionPermission() async {
+    if (Platform.isAndroid) {
+      // Minta izin ACTIVITY_RECOGNITION
+      final status = await Permission.activityRecognition.request();
+
+      if (status.isGranted) {
+        // Jika diizinkan, mulai pedometer
+        _startTracking();
+      } else if (status.isDenied) {
+        // Izin ditolak sementara
+        // Beri penjelasan ke user atau minta lagi di event tertentu
+        print("ACTIVITY_RECOGNITION permission denied.");
+      } else if (status.isPermanentlyDenied) {
+        // User menolak izin secara permanen, arahkan ke settings
+        print("ACTIVITY_RECOGNITION permission permanently denied.");
+        await openAppSettings();
+      }
+    } else {
+      // iOS tidak membutuhkan ACTIVITY_RECOGNITION
+      _startTracking();
+    }
+  }
+
+  /// Memulai streaming langkah dari Pedometer
   void _startTracking() {
     _stepStream = Pedometer.stepCountStream.listen((StepCount event) {
       final currentDate = DateTime.now();
 
+      // Cek pergantian hari
       if (_lastUpdatedDate.day != currentDate.day ||
           _lastUpdatedDate.month != currentDate.month ||
           _lastUpdatedDate.year != currentDate.year) {
-        // Reset data jika pergantian hari terdeteksi
+        // Reset data jika hari berganti
         _resetData();
       }
 
+      // Simpan langkah awal (device steps) saat pertama kali didapat
       if (_initialStepCount == 0) {
-        // Simpan langkah awal
         _initialStepCount = event.steps;
       }
 
       setState(() {
-        // Hitung langkah relatif terhadap langkah awal
+        // Hitung langkah relatif (dikurangi langkah awal)
         _stepCount = event.steps - _initialStepCount;
 
-        // Hitung jarak berdasarkan langkah
-        _distance = (_stepCount * _stepLength) / 1000; // Konversi ke kilometer
+        // Konversi langkah menjadi jarak (km)
+        _distance = (_stepCount * _stepLength) / 1000;
 
-        // Hitung kalori berdasarkan langkah
+        // Hitung kalori terbakar
         _calculateCalories();
 
-        // Perbarui tanggal terakhir
+        // Update tanggal terakhir
         _lastUpdatedDate = currentDate;
       });
     }, onError: (error) {
@@ -61,6 +89,7 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
     });
   }
 
+  /// Reset data (misal saat pergantian hari)
   void _resetData() {
     setState(() {
       _stepCount = 0;
@@ -71,8 +100,9 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
     print("Data reset at midnight.");
   }
 
+  /// Hitung kalori berdasarkan langkah
   void _calculateCalories() {
-    // Hitung kalori dengan pendekatan langkah
+    // Contoh kalkulasi sederhana
     double caloriesPerStep = _weight * 0.0005;
     double caloriesFromSteps = _stepCount * caloriesPerStep;
 
@@ -83,6 +113,7 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
 
   @override
   void dispose() {
+    // Pastikan stream pedometer di-cancel saat widget dibuang
     _stepStream?.cancel();
     super.dispose();
   }
@@ -120,14 +151,15 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
               ],
             ),
           ),
-          // Lingkaran Progress
+
+          // Lingkaran Progress (Custom Paint)
           Center(
             child: Stack(
               alignment: Alignment.center,
               children: [
                 CustomPaint(
                   size: const Size(260, 260),
-                  painter: CircleProgressPainter(progress: progress), // Progres
+                  painter: CircleProgressPainter(progress: progress),
                 ),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -154,7 +186,8 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
             ),
           ),
           const SizedBox(height: 30),
-          // Informasi Tambahan (Kalori & Jarak)
+
+          // Info tambahan (kalori, jarak)
           Container(
             padding: const EdgeInsets.all(20),
             margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -193,6 +226,7 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen> {
   }
 }
 
+// Painter untuk membuat lingkaran progress
 class CircleProgressPainter extends CustomPainter {
   final double progress;
 
@@ -203,7 +237,7 @@ class CircleProgressPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 6;
 
-    // Lingkaran Latar Belakang (Track)
+    // Lingkaran latar belakang (track)
     final trackPaint = Paint()
       ..color = Colors.white.withOpacity(0.3)
       ..style = PaintingStyle.stroke
@@ -211,7 +245,7 @@ class CircleProgressPainter extends CustomPainter {
 
     canvas.drawCircle(center, radius, trackPaint);
 
-    // Lingkaran Progress
+    // Lingkaran progress
     final progressPaint = Paint()
       ..shader = const LinearGradient(
         colors: [Colors.teal, Colors.tealAccent],
@@ -238,6 +272,7 @@ class CircleProgressPainter extends CustomPainter {
   }
 }
 
+// Widget sederhana untuk menampilkan info kalori / jarak
 class InfoCard extends StatelessWidget {
   final String title;
   final String value;
