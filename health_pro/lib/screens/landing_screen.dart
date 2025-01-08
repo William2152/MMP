@@ -27,8 +27,8 @@ class _LandingScreenState extends State<LandingScreen>
     );
 
     _animation = Tween<double>(
-      begin: 1.0,
-      end: 0.0,
+      begin: 0.0,
+      end: 1.0,
     ).animate(_animationController);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -38,25 +38,28 @@ class _LandingScreenState extends State<LandingScreen>
 
   Future<void> _initializeAndNavigate() async {
     try {
-      // Show splash for minimum duration
-      await Future.delayed(const Duration(seconds: 2));
-
-      if (!mounted) return;
-
-      // Start fade animation
       await _animationController.forward();
 
       if (!mounted) return;
 
-      // Check auth status using existing event
       context.read<AuthBloc>().add(CheckAuthStatus());
     } catch (e) {
       debugPrint('Navigation error: $e');
       if (mounted && !_isNavigating) {
-        _isNavigating = true;
-        Navigator.of(context).pushReplacementNamed('/login');
+        await _performNavigationWithAnimation('/login');
       }
     }
+  }
+
+  Future<void> _performNavigationWithAnimation(String route) async {
+    if (_isNavigating) return;
+    _isNavigating = true;
+
+    await _animationController.reverse();
+
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacementNamed(route);
   }
 
   @override
@@ -68,14 +71,12 @@ class _LandingScreenState extends State<LandingScreen>
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is AuthSuccess && !_isNavigating) {
-          _isNavigating = true;
-          Navigator.pushReplacementNamed(context, '/home');
+          await _performNavigationWithAnimation('/home');
         } else if ((state is AuthUnauthenticated || state is AuthError) &&
             !_isNavigating) {
-          _isNavigating = true;
-          Navigator.pushReplacementNamed(context, '/login');
+          await _performNavigationWithAnimation('/login');
         }
       },
       child: Scaffold(

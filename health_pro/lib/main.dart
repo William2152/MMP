@@ -2,18 +2,25 @@
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_background_service_android/flutter_background_service_android.dart';
-import 'package:pedometer/pedometer.dart'; // Tambahkan pustaka pedometer
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_pro/screens/account_screen.dart';
 import 'package:health_pro/screens/activity_tracker_screen.dart';
+import 'package:health_pro/screens/food_log_screen.dart';
+import 'package:health_pro/screens/getting_started_screen.dart';
 import 'package:health_pro/screens/home_screen.dart';
 import 'package:health_pro/screens/landing_screen.dart';
 import 'package:health_pro/screens/login_screen.dart';
 import 'package:health_pro/screens/nutrition_counter_screen.dart';
+import 'package:health_pro/screens/water_screen.dart';
+import 'package:health_pro/widgets/navigation_wrapper.dart';
+import 'package:pedometer/pedometer.dart';
 import 'blocs/auth/auth_bloc.dart';
 import 'repositories/auth_repository.dart';
+import 'blocs/water_old/water_bloc_old.dart';
+import 'repositories/water_repository_old.dart';
 import 'screens/register_screen.dart';
+// import 'screens/export.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,7 +75,7 @@ bool onIosBackground(ServiceInstance service) {
 
 class MyApp extends StatelessWidget {
   final AuthRepository _authRepository = AuthRepository();
-
+  final WaterRepository _waterRepository = WaterRepository();
   MyApp({super.key});
 
   @override
@@ -78,13 +85,16 @@ class MyApp extends StatelessWidget {
         BlocProvider<AuthBloc>(
           create: (context) => AuthBloc(_authRepository),
         ),
+        BlocProvider<WaterBloc>(
+          create: (context) => WaterBloc(_waterRepository),
+        )
       ],
       child: MaterialApp(
         title: 'HealthPro App',
         theme: ThemeData(
           primaryColor: const Color(0xFF2D5A27),
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF2D5A27),
+            seedColor: const Color(0xFFE3F4E9),
           ),
         ),
         initialRoute: '/activity_tracker',
@@ -92,9 +102,27 @@ class MyApp extends StatelessWidget {
           '/': (context) => const LandingScreen(),
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegisterScreen(),
-          '/home': (context) => const HomeScreen(),
-          '/nutrition': (context) => const NutritionCounterScreen(),
-          '/activity_tracker': (context) => ActivityTrackerScreen(),
+          '/get_start': (context) => GettingStartedScreen(),
+          '/home': (context) => NavigationWrapper(
+                screen: const HomeScreen(),
+                showBottomBar: true,
+              ),
+          '/activity': (context) => NavigationWrapper(
+                screen: const ActivityTrackerScreen(),
+                showBottomBar: true,
+              ),
+          '/account': (context) => NavigationWrapper(
+                screen: AccountScreen(),
+                showBottomBar: true,
+              ),
+          '/food_log': (context) => NavigationWrapper(
+                screen: const FoodLogScreen(),
+                showBottomBar: true,
+              ),
+          '/water': (context) => NavigationWrapper(
+                screen: const WaterScreen(),
+                showBottomBar: true,
+              ),
         },
       ),
     );
