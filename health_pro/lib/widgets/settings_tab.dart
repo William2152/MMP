@@ -3,49 +3,91 @@ import 'package:flutter/cupertino.dart';
 import 'dart:math' as math;
 
 class SettingsTab extends StatefulWidget {
-  final double dailyGoal;
-  final double selectedVolume;
+  final int dailyGoal;
+  final int selectedVolume;
   final int reminderInterval;
-  final Function(double) onDailyGoalChanged;
-  final Function(double) onSelectedVolumeChanged;
-  final Function(int) onReminderIntervalChanged;
+  final Function(Map<String, int>) onSettingsChanged;
   final VoidCallback onUseRecommendedSettings;
 
   const SettingsTab({
-    Key? key,
+    super.key,
     required this.dailyGoal,
     required this.selectedVolume,
     required this.reminderInterval,
-    required this.onDailyGoalChanged,
-    required this.onSelectedVolumeChanged,
-    required this.onReminderIntervalChanged,
+    required this.onSettingsChanged,
     required this.onUseRecommendedSettings,
-  }) : super(key: key);
+  });
 
   @override
   _SettingsTabState createState() => _SettingsTabState();
 }
 
 class _SettingsTabState extends State<SettingsTab> {
-  late double _dailyGoal;
-  late double _selectedVolume;
-  late int _reminderInterval;
-  bool _settingsChanged = false;
+  // Track both current and initial values
+  late int _currentDailyGoal;
+  late int _currentSelectedVolume;
+  late int _currentReminderInterval;
+
+  late int _initialDailyGoal;
+  late int _initialSelectedVolume;
+  late int _initialReminderInterval;
 
   @override
   void initState() {
     super.initState();
-    _dailyGoal = widget.dailyGoal;
-    _selectedVolume = widget.selectedVolume;
-    _reminderInterval = widget.reminderInterval;
+    _initializeValues();
   }
 
-  void _updateSettings() {
-    widget.onDailyGoalChanged(_dailyGoal);
-    widget.onSelectedVolumeChanged(_selectedVolume);
-    widget.onReminderIntervalChanged(_reminderInterval);
+  @override
+  void didUpdateWidget(SettingsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update values if they change from parent
+    if (oldWidget.dailyGoal != widget.dailyGoal ||
+        oldWidget.selectedVolume != widget.selectedVolume ||
+        oldWidget.reminderInterval != widget.reminderInterval) {
+      _initializeValues();
+    }
+  }
+
+  void _initializeValues() {
+    _currentDailyGoal = widget.dailyGoal;
+    _currentSelectedVolume = widget.selectedVolume;
+    _currentReminderInterval = widget.reminderInterval;
+
+    _initialDailyGoal = widget.dailyGoal;
+    _initialSelectedVolume = widget.selectedVolume;
+    _initialReminderInterval = widget.reminderInterval;
+  }
+
+  bool get _hasChanges {
+    return _currentDailyGoal != _initialDailyGoal ||
+        _currentSelectedVolume != _initialSelectedVolume ||
+        _currentReminderInterval != _initialReminderInterval;
+  }
+
+  void _saveChanges() {
+    final Map<String, int> changes = {};
+
+    if (_currentDailyGoal != _initialDailyGoal) {
+      changes['dailyGoal'] = _currentDailyGoal;
+    }
+    if (_currentSelectedVolume != _initialSelectedVolume) {
+      changes['customVolume'] = _currentSelectedVolume;
+    }
+    if (_currentReminderInterval != _initialReminderInterval) {
+      changes['reminderInterval'] = _currentReminderInterval;
+    }
+
+    // Call onSettingsChanged with all changes at once
+    if (changes.isNotEmpty) {
+      widget.onSettingsChanged(changes);
+    }
+
+    // Update initial values to match current
     setState(() {
-      _settingsChanged = false;
+      _initialDailyGoal = _currentDailyGoal;
+      _initialSelectedVolume = _currentSelectedVolume;
+      _initialReminderInterval = _currentReminderInterval;
     });
   }
 
@@ -63,17 +105,24 @@ class _SettingsTabState extends State<SettingsTab> {
             _buildReminderIntervalSetting(),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: widget.onUseRecommendedSettings,
+              onPressed: () {
+                widget.onUseRecommendedSettings();
+                // Update local values after recommended settings are applied
+                setState(() {
+                  _initializeValues();
+                });
+              },
               child: const Text('Use Recommended Settings'),
             ),
+            const SizedBox(height: 80), // Space for FAB
           ],
         ),
-        if (_settingsChanged)
+        if (_hasChanges)
           Positioned(
             bottom: 16,
             right: 16,
             child: FloatingActionButton(
-              onPressed: _updateSettings,
+              onPressed: _saveChanges,
               child: const Icon(Icons.save),
             ),
           ),
@@ -82,6 +131,9 @@ class _SettingsTabState extends State<SettingsTab> {
   }
 
   Widget _buildDailyGoalSetting() {
+    // Find initial picker index based on current value
+    final initialItem = (_currentDailyGoal ~/ 50) - 10;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -93,11 +145,13 @@ class _SettingsTabState extends State<SettingsTab> {
         SizedBox(
           height: 100,
           child: CupertinoPicker(
+            scrollController: FixedExtentScrollController(
+              initialItem: initialItem.clamp(0, 50),
+            ),
             itemExtent: 40,
             onSelectedItemChanged: (index) {
               setState(() {
-                _dailyGoal = (index + 10) * 50.0;
-                _settingsChanged = true;
+                _currentDailyGoal = (index + 10) * 50;
               });
             },
             children: List.generate(51, (index) {
@@ -116,25 +170,24 @@ class _SettingsTabState extends State<SettingsTab> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Custom Your Water Volume',
+          'Custom Water Volume',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         Slider(
-          value: _selectedVolume,
+          value: _currentSelectedVolume.toDouble(),
           min: 100,
           max: 1000,
           divisions: 90,
-          label: '${_selectedVolume.round()} ml',
+          label: '${_currentSelectedVolume.round()} ml',
           onChanged: (value) {
             setState(() {
-              _selectedVolume = value;
-              _settingsChanged = true;
+              _currentSelectedVolume = value.toInt();
             });
           },
         ),
         Text(
-          '${_selectedVolume.round()} ml',
+          '${_currentSelectedVolume.round()} ml',
           style: const TextStyle(fontSize: 16),
           textAlign: TextAlign.center,
         ),
@@ -196,7 +249,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                 ),
                 Transform.rotate(
-                  angle: (2 * math.pi * _reminderInterval / 120) - 1.575,
+                  angle: (2 * math.pi * _currentReminderInterval / 120) - 1.575,
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Container(
@@ -228,7 +281,7 @@ class _SettingsTabState extends State<SettingsTab> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '$_reminderInterval',
+                          '$_currentReminderInterval',
                           style: const TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
@@ -253,22 +306,6 @@ class _SettingsTabState extends State<SettingsTab> {
     );
   }
 
-  void _updateVolumeFromGesture(Offset position) {
-    final center = Offset(150, 150);
-    var angle = math.atan2(
-      position.dx - center.dx,
-      center.dy - position.dy,
-    );
-
-    if (angle < 0) angle += 2 * math.pi;
-
-    setState(() {
-      _selectedVolume =
-          ((angle / (2 * math.pi)) * 600).round().clamp(50, 500).toDouble();
-      _settingsChanged = true;
-    });
-  }
-
   void _updateIntervalFromGesture(Offset position) {
     final center = Offset(150, 150);
     var angle = math.atan2(
@@ -279,44 +316,9 @@ class _SettingsTabState extends State<SettingsTab> {
     if (angle < 0) angle += 2 * math.pi;
 
     setState(() {
-      _reminderInterval = ((angle / (2 * math.pi)) * 120).round().clamp(1, 120);
-      _settingsChanged = true;
+      _currentReminderInterval =
+          ((angle / (2 * math.pi)) * 120).round().clamp(1, 120);
     });
-  }
-
-  void _showVolumePicker() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Set Water Volume'),
-        content: TextField(
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Volume (50-500 ml)',
-            suffix: Text('ml'),
-          ),
-          onChanged: (value) {
-            if (value.isNotEmpty) {
-              final newValue = int.parse(value).clamp(50, 500);
-              setState(() {
-                _selectedVolume = newValue.toDouble();
-                _settingsChanged = true;
-              });
-            }
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showIntervalPicker() {
@@ -330,12 +332,13 @@ class _SettingsTabState extends State<SettingsTab> {
             labelText: 'Minutes (1-120)',
             suffix: Text('min'),
           ),
+          controller:
+              TextEditingController(text: _currentReminderInterval.toString()),
           onChanged: (value) {
             if (value.isNotEmpty) {
               final newValue = int.parse(value).clamp(1, 120);
               setState(() {
-                _reminderInterval = newValue;
-                _settingsChanged = true;
+                _currentReminderInterval = newValue;
               });
             }
           },

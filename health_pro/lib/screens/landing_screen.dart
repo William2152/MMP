@@ -1,8 +1,10 @@
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/auth/auth_bloc.dart';
-import '../blocs/auth/auth_state.dart';
 import '../blocs/auth/auth_event.dart';
+import '../blocs/auth/auth_state.dart';
+import 'dart:io' show Platform;
 
 class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
@@ -33,9 +35,29 @@ class _LandingScreenState extends State<LandingScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeAndNavigate();
+      _requestPermissions(); // Tambahkan pemeriksaan izin di sini
     });
   }
 
+  /// Memeriksa izin notifikasi dan aktivitas
+  Future<void> _requestPermissions() async {
+    // Periksa izin notifikasi
+    final notificationPermission = await Permission.notification.status;
+    if (notificationPermission.isDenied) {
+      await Permission.notification.request();
+    }
+
+    // Periksa izin aktivitas (activity recognition)
+    if (Platform.isAndroid) {
+      final activityPermission = await Permission.activityRecognition.request();
+      if (!activityPermission.isGranted) {
+        debugPrint("Activity Recognition permission not granted.");
+        await openAppSettings();
+      }
+    }
+  }
+
+  /// Navigasi dengan animasi
   Future<void> _initializeAndNavigate() async {
     try {
       await _animationController.forward();

@@ -1,9 +1,10 @@
-// lib/main.dart
-
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_pro/blocs/water/water_bloc.dart';
+import 'package:health_pro/repositories/water_repository.dart';
 import 'package:health_pro/screens/account_screen.dart';
 import 'package:health_pro/screens/activity_tracker_screen.dart';
 import 'package:health_pro/screens/food_log_screen.dart';
@@ -11,20 +12,39 @@ import 'package:health_pro/screens/getting_started_screen.dart';
 import 'package:health_pro/screens/home_screen.dart';
 import 'package:health_pro/screens/landing_screen.dart';
 import 'package:health_pro/screens/login_screen.dart';
-import 'package:health_pro/screens/nutrition_counter_screen.dart';
 import 'package:health_pro/screens/water_screen.dart';
 import 'package:health_pro/widgets/navigation_wrapper.dart';
 import 'package:pedometer/pedometer.dart';
 import 'blocs/auth/auth_bloc.dart';
 import 'repositories/auth_repository.dart';
-import 'blocs/water_old/water_bloc_old.dart';
-import 'repositories/water_repository_old.dart';
 import 'screens/register_screen.dart';
-// import 'screens/export.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  AwesomeNotifications().initialize(
+    null, // Ganti dengan ikon Anda
+    [
+      NotificationChannel(
+        channelKey: 'water_reminder',
+        channelName: 'Water Reminder Notifications',
+        channelDescription: 'Notifications to remind you to drink water',
+        defaultColor: Colors.blue,
+        importance: NotificationImportance.High,
+        playSound: true,
+      ),
+      NotificationChannel(
+        channelKey: 'activity_tracker',
+        channelName: 'Activity Tracker Notifications',
+        channelDescription: 'Notifications for activity tracker updates',
+        defaultColor: Colors.green,
+        importance: NotificationImportance.High,
+        playSound: true,
+      ),
+    ],
+  );
+
   await initializeBackgroundService(); // Inisialisasi background service
   runApp(MyApp());
 }
@@ -37,10 +57,12 @@ Future<void> initializeBackgroundService() async {
       onStart: onStart,
       isForegroundMode: true,
       autoStart: true,
+      autoStartOnBoot: true,
     ),
     iosConfiguration: IosConfiguration(
       onForeground: onStart,
-      onBackground: onIosBackground,
+      onBackground: (service) => true, // Log or handle as needed
+      autoStart: true,
     ),
   );
 
@@ -68,15 +90,48 @@ Future<void> onStart(ServiceInstance service) async {
   });
 }
 
-@pragma('vm:entry-point')
-bool onIosBackground(ServiceInstance service) {
-  return true;
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
 }
 
-class MyApp extends StatelessWidget {
-  final AuthRepository _authRepository = AuthRepository();
-  final WaterRepository _waterRepository = WaterRepository();
-  MyApp({super.key});
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  final WaterRepository _waterRepository;
+  final AuthRepository _authRepository;
+
+  // Create a GlobalKey for Navigator
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  _MyAppState()
+      : _waterRepository = WaterRepository(AwesomeNotifications()),
+        _authRepository = AuthRepository(
+          waterRepository: WaterRepository(AwesomeNotifications()),
+        );
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Schedule navigation after the current frame is drawn
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          // Use the NavigatorState from the global key
+          _navigatorKey.currentState?.pushReplacementNamed('/');
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,10 +141,12 @@ class MyApp extends StatelessWidget {
           create: (context) => AuthBloc(_authRepository),
         ),
         BlocProvider<WaterBloc>(
-          create: (context) => WaterBloc(_waterRepository),
+          create: (context) => WaterBloc(repository: _waterRepository),
         )
       ],
       child: MaterialApp(
+        navigatorKey:
+            _navigatorKey, // Pass the navigator key to the MaterialApp
         title: 'HealthPro App',
         theme: ThemeData(
           primaryColor: const Color(0xFF2D5A27),
@@ -97,7 +154,7 @@ class MyApp extends StatelessWidget {
             seedColor: const Color(0xFFE3F4E9),
           ),
         ),
-        initialRoute: '/activity_tracker',
+        initialRoute: '/',
         routes: {
           '/': (context) => const LandingScreen(),
           '/login': (context) => const LoginScreen(),

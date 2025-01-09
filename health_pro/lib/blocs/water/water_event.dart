@@ -1,5 +1,6 @@
-// water_event.dart
-part of 'water_bloc.dart';
+// water_event.dart part
+
+import 'package:equatable/equatable.dart';
 
 // @immutable
 sealed class WaterEvent extends Equatable {
@@ -11,21 +12,28 @@ sealed class WaterEvent extends Equatable {
 
 final class LoadWaterDataEvent extends WaterEvent {
   final String userId;
-
   const LoadWaterDataEvent({required this.userId});
 
   @override
   List<Object?> get props => [userId];
 }
 
-final class UpdateWaterSettingsEvent extends WaterEvent {
-  final double? dailyGoal;
+final class DrinkWaterEvent extends WaterEvent {
+  final int amount;
+  const DrinkWaterEvent({required this.amount});
+
+  @override
+  List<Object?> get props => [amount];
+}
+
+final class UpdateSettingsEvent extends WaterEvent {
+  final int? dailyGoal;
   final int? reminderInterval;
-  final double? selectedVolume;
-  final double? customVolume;
+  final int? selectedVolume;
+  final int? customVolume;
   final bool? remindersEnabled;
 
-  const UpdateWaterSettingsEvent({
+  const UpdateSettingsEvent({
     this.dailyGoal,
     this.reminderInterval,
     this.selectedVolume,
@@ -43,11 +51,14 @@ final class UpdateWaterSettingsEvent extends WaterEvent {
       ];
 }
 
-final class AddWaterConsumptionEvent extends WaterEvent {
-  final double amount;
-
-  const AddWaterConsumptionEvent({required this.amount});
+final class UpdateVolumeSelectionEvent extends WaterEvent {
+  final int index;
+  const UpdateVolumeSelectionEvent({required this.index});
 
   @override
-  List<Object?> get props => [amount];
+  List<Object?> get props => [index];
+}
+
+final class UseRecommendedSettingsEvent extends WaterEvent {
+  const UseRecommendedSettingsEvent();
 }

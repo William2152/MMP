@@ -8,11 +8,11 @@ class HydrationProgress extends StatelessWidget {
   final double dailyGoal;
 
   const HydrationProgress({
-    Key? key,
+    super.key,
     required this.progress,
     required this.currentConsumption,
     required this.dailyGoal,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

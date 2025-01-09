@@ -1,5 +1,8 @@
 // water_state.dart
-part of 'water_bloc.dart';
+// part of 'water_bloc.dart';
+
+import 'package:equatable/equatable.dart';
+import 'package:health_pro/models/water_model.dart';
 
 // @immutable
 sealed class WaterState extends Equatable {
@@ -22,24 +25,12 @@ final class WaterLoadedState extends WaterState {
 
   const WaterLoadedState({required this.model});
 
-  double get todaysConsumption {
-    final today = DateTime(
-      DateTime.now().year,
-      DateTime.now().month,
-      DateTime.now().day,
-    );
-    return model.dailyConsumption[today] ?? 0;
-  }
-
-  bool get goalAchieved => todaysConsumption >= model.dailyGoal;
-
   @override
-  List<Object?> get props => [model, todaysConsumption, goalAchieved];
+  List<Object?> get props => [model];
 }
 
 final class WaterErrorState extends WaterState {
   final String message;
-
   const WaterErrorState({required this.message});
 
   @override

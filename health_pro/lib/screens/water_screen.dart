@@ -1,9 +1,20 @@
+// lib\screens\water_screen.dart
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_pro/blocs/auth/auth_bloc.dart';
+import 'package:health_pro/blocs/auth/auth_state.dart';
+import 'package:health_pro/blocs/water/water_bloc.dart';
+import 'package:health_pro/blocs/water/water_event.dart';
+import 'package:health_pro/blocs/water/water_state.dart';
+import 'package:health_pro/models/water_model.dart';
 import 'package:health_pro/widgets/hydration_progress.dart';
 import 'package:health_pro/widgets/settings_tab.dart';
+import 'package:health_pro/widgets/water_analytics_tab.dart';
 import 'package:health_pro/widgets/water_volume_selection.dart';
 import 'package:intl/intl.dart';
+import 'dart:math';
 
 class WaterScreen extends StatefulWidget {
   const WaterScreen({Key? key}) : super(key: key);
@@ -15,18 +26,23 @@ class WaterScreen extends StatefulWidget {
 class _WaterScreenState extends State<WaterScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  double dailyGoal = 2000; // ml
-  int reminderInterval = 30; // minutes
-  int selectedVolumeIndex = 0;
-  double selectedVolume = 250; // ml
-  double customVolume = 300; // ml
-  bool remindersEnabled = true;
-  double currentConsumption = 1290; // ml
+  bool _hasCheckedPermissions = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _initializeNotifications();
+
+    // Tambahkan ini untuk load data saat pertama kali
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthSuccess) {
+        context.read<WaterBloc>().add(
+              LoadWaterDataEvent(userId: authState.user.id),
+            );
+      }
+    });
   }
 
   @override
@@ -35,8 +51,129 @@ class _WaterScreenState extends State<WaterScreen>
     super.dispose();
   }
 
+  Future<void> _initializeNotifications() async {
+    try {
+      // Initialize AwesomeNotifications if not already initialized
+      await AwesomeNotifications().initialize(
+        null, // no icon for now
+        [
+          NotificationChannel(
+            channelKey: 'water_reminder',
+            channelName: 'Water Reminders',
+            channelDescription: 'Notifications for water intake reminders',
+            defaultColor: Colors.blue,
+            ledColor: Colors.blue,
+            importance: NotificationImportance.High,
+          )
+        ],
+      );
+
+      // Check initial permissions
+      final isAllowed = await AwesomeNotifications().isNotificationAllowed();
+      setState(() => _hasCheckedPermissions = true);
+
+      if (!isAllowed) {
+        // Show permission request dialog on first launch
+        if (mounted) {
+          _showNotificationDialog();
+        }
+      }
+    } catch (e) {
+      print('Error initializing notifications: $e');
+      setState(() => _hasCheckedPermissions = true);
+    }
+  }
+
+  Future<void> _showNotificationDialog() async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enable Notifications'),
+          content: const Text(
+            'To get water intake reminders, please enable notifications. This helps you stay hydrated throughout the day.',
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Not Now'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Enable'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _requestNotificationPermission();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    try {
+      final isAllowed =
+          await AwesomeNotifications().requestPermissionToSendNotifications();
+      if (!isAllowed) {
+        // If permission denied, show instructions for manual enable
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                  'Please enable notifications in system settings to receive reminders'),
+              action: SnackBarAction(
+                label: 'Settings',
+                onPressed: () =>
+                    AwesomeNotifications().showNotificationConfigPage(),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error requesting notification permission: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Unable to request notification permissions. Please check system settings.'),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (!_hasCheckedPermissions) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        if (authState is AuthSuccess) {
+          return _buildWaterScreen(context);
+        }
+
+        if (authState is AuthUnauthenticated) {
+          return const Scaffold(
+            body: Center(child: Text("Please log in to continue")),
+          );
+        }
+
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      },
+    );
+  }
+
+  Widget _buildWaterScreen(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -56,120 +193,140 @@ class _WaterScreenState extends State<WaterScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          _buildDrinkTab(),
-          _buildAnalyticsTab(),
-          SettingsTab(
-            dailyGoal: dailyGoal,
-            selectedVolume: customVolume,
-            reminderInterval: reminderInterval,
-            onDailyGoalChanged: (value) {
-              setState(() {
-                dailyGoal = value;
-              });
-            },
-            onSelectedVolumeChanged: (value) {
-              setState(() {
-                customVolume = value;
-                if (selectedVolumeIndex == 3) {
-                  selectedVolume = value;
-                }
-              });
-            },
-            onReminderIntervalChanged: (value) {
-              setState(() {
-                reminderInterval = value;
-              });
-            },
-            onUseRecommendedSettings: _useRecommendedSettings,
-          ),
-        ],
+      body: BlocBuilder<WaterBloc, WaterState>(
+        builder: (context, waterState) {
+          if (waterState is WaterLoadingState) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (waterState is WaterErrorState) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(waterState.message),
+                  ElevatedButton(
+                    onPressed: () {
+                      final authState = context.read<AuthBloc>().state;
+                      if (authState is AuthSuccess) {
+                        context.read<WaterBloc>().add(
+                              LoadWaterDataEvent(userId: authState.user.id),
+                            );
+                      }
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (waterState is WaterLoadedState) {
+            return TabBarView(
+              controller: _tabController,
+              children: [
+                _buildDrinkTab(context, waterState.model),
+                _buildAnalyticsTab(context, waterState.model),
+                _buildSettingsTab(context, waterState.model),
+              ],
+            );
+          }
+
+          return const Center(child: Text('Something went wrong'));
+        },
       ),
     );
   }
 
-  Widget _buildDrinkTab() {
+  Widget _buildNotificationPermissionBanner(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: AwesomeNotifications().isNotificationAllowed(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && !snapshot.data!) {
+          return Container(
+            color: Colors.yellow[700],
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Enable notifications for reminders.',
+                  style: TextStyle(color: Colors.black),
+                ),
+                TextButton(
+                  onPressed: () => _requestNotificationPermission(),
+                  child: const Text(
+                    'Enable',
+                    style: TextStyle(color: Colors.blue),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  Widget _buildDrinkTab(BuildContext context, WaterModel model) {
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: 20),
           HydrationProgress(
-            progress: currentConsumption / dailyGoal,
-            currentConsumption: currentConsumption,
-            dailyGoal: dailyGoal,
+            progress: model.todayConsumption / model.dailyGoal,
+            currentConsumption: model.todayConsumption.toDouble(),
+            dailyGoal: model.dailyGoal.toDouble(),
           ),
           const SizedBox(height: 20),
           WaterVolumeSelection(
-            selectedVolumeIndex: selectedVolumeIndex,
-            customVolume: customVolume.toInt(),
+            selectedVolumeIndex: model.selectedVolumeIndex,
+            customVolume: model.customVolume.toInt(),
             onVolumeSelected: (index) {
-              setState(() {
-                selectedVolumeIndex = index;
-                selectedVolume = index == 0
-                    ? 250
-                    : index == 1
-                        ? 500
-                        : index == 2
-                            ? 180
-                            : customVolume;
-              });
+              context.read<WaterBloc>().add(
+                    UpdateVolumeSelectionEvent(index: index),
+                  );
             },
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: _addWater,
-            child: Text('Drink ${selectedVolume.toInt()} ml'),
+            onPressed: () {
+              context.read<WaterBloc>().add(
+                    DrinkWaterEvent(amount: model.selectedVolume),
+                  );
+            },
+            child: Text('Drink ${model.selectedVolume.toInt()} ml'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAnalyticsTab() {
-    return Column(
-      children: [
-        _buildDateSelector(),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(show: false),
-                titlesData: FlTitlesData(show: false),
-                borderData: FlBorderData(show: false),
-                minX: 1,
-                maxX: 7,
-                minY: 0,
-                maxY: 3000,
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: [
-                      const FlSpot(1, 1500),
-                      const FlSpot(2, 2000),
-                      const FlSpot(3, 1800),
-                      const FlSpot(4, 2200),
-                      const FlSpot(5, 1900),
-                      const FlSpot(6, 2100),
-                      const FlSpot(7, 2300),
-                    ],
-                    isCurved: true,
-                    color: Colors.blue,
-                    barWidth: 4,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                        show: true, color: Colors.blue.withOpacity(0.2)),
-                  ),
-                ],
+  Widget _buildAnalyticsTab(BuildContext context, WaterModel model) {
+    return WaterAnalyticsTab(model: model);
+  }
+
+  Widget _buildSettingsTab(BuildContext context, WaterModel model) {
+    return SettingsTab(
+      dailyGoal: model.dailyGoal,
+      selectedVolume: model.customVolume,
+      reminderInterval: model.reminderInterval,
+      onSettingsChanged: (Map<String, int> changes) {
+        context.read<WaterBloc>().add(
+              UpdateSettingsEvent(
+                dailyGoal: changes['dailyGoal'],
+                customVolume: changes['customVolume'],
+                reminderInterval: changes['reminderInterval'],
               ),
-            ),
-          ),
-        ),
-      ],
+            );
+      },
+      onUseRecommendedSettings: () {
+        context.read<WaterBloc>().add(
+              const UseRecommendedSettingsEvent(),
+            );
+      },
     );
   }
 
@@ -207,22 +364,5 @@ class _WaterScreenState extends State<WaterScreen>
         },
       ),
     );
-  }
-
-  void _addWater() {
-    setState(() {
-      currentConsumption += selectedVolume;
-    });
-  }
-
-  void _useRecommendedSettings() {
-    setState(() {
-      dailyGoal = 2000;
-      customVolume = 300;
-      reminderInterval = 30;
-      if (selectedVolumeIndex == 3) {
-        selectedVolume = customVolume;
-      }
-    });
   }
 }

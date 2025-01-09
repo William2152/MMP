@@ -1,27 +1,65 @@
 // water_model.dart
-class WaterModel {
+import 'package:equatable/equatable.dart';
+
+class WaterModel extends Equatable {
   final String userId;
   // Settings
-  final double dailyGoal; // in ml
+  final int dailyGoal; // in ml
   final int reminderInterval; // in minutes
-  final double selectedVolume; // single drink volume in ml
-  // final double customVolume; // custom drink volume in ml
+  final int selectedVolume; // in ml
+  final int customVolume; // in ml
   final bool remindersEnabled;
+  final int selectedVolumeIndex; // tracks which volume option is selected
 
-  // Daily consumption
-  final Map<DateTime, double>
-      dailyConsumption; // key: date, value: total consumption in ml
-  DateTime? lastReminderTime;
+  // Consumption logs
+  final List<WaterLog> consumptionLogs;
+  final DateTime? lastReminderTime;
 
-  WaterModel({
+  const WaterModel({
     required this.userId,
-    required this.dailyGoal,
-    required this.reminderInterval,
-    required this.selectedVolume,
+    this.dailyGoal = 2000,
+    this.reminderInterval = 30,
+    this.selectedVolume = 250,
+    this.customVolume = 300,
     this.remindersEnabled = true,
-    Map<DateTime, double>? dailyConsumption,
+    this.selectedVolumeIndex = 0,
+    this.consumptionLogs = const [],
     this.lastReminderTime,
-  }) : this.dailyConsumption = dailyConsumption ?? {};
+  });
+
+  // Get today's total consumption
+  int get todayConsumption {
+    final today = DateTime.now();
+    return consumptionLogs
+        .where((log) =>
+            log.timestamp.year == today.year &&
+            log.timestamp.month == today.month &&
+            log.timestamp.day == today.day)
+        .fold(0, (sum, log) => sum + log.amount);
+  }
+
+  // Get consumption for a specific date
+  int getConsumptionForDate(DateTime date) {
+    return consumptionLogs
+        .where((log) =>
+            log.timestamp.year == date.year &&
+            log.timestamp.month == date.month &&
+            log.timestamp.day == date.day)
+        .fold(0, (sum, log) => (sum + log.amount));
+  }
+
+  // Get last 7 days consumption for analytics
+  List<int> getLastWeekConsumption() {
+    final today = DateTime.now();
+    List<int> weeklyData = [];
+
+    for (int i = 6; i >= 0; i--) {
+      final date = today.subtract(Duration(days: i));
+      weeklyData.add(getConsumptionForDate(date));
+    }
+
+    return weeklyData;
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -29,38 +67,41 @@ class WaterModel {
       'dailyGoal': dailyGoal,
       'reminderInterval': reminderInterval,
       'selectedVolume': selectedVolume,
+      'customVolume': customVolume,
       'remindersEnabled': remindersEnabled,
-      'dailyConsumption': dailyConsumption
-          .map((key, value) => MapEntry(key.toIso8601String(), value)),
+      'selectedVolumeIndex': selectedVolumeIndex,
+      'consumptionLogs': consumptionLogs.map((log) => log.toJson()).toList(),
       'lastReminderTime': lastReminderTime?.toIso8601String(),
     };
   }
 
   factory WaterModel.fromJson(Map<String, dynamic> json) {
     return WaterModel(
-      userId: json['userId'],
-      dailyGoal: json['dailyGoal'].toDouble(),
-      reminderInterval: json['reminderInterval'],
-      selectedVolume: json['selectedVolume'].toDouble(),
-      remindersEnabled: json['remindersEnabled'] ?? true,
-      dailyConsumption: (json['dailyConsumption'] as Map<String, dynamic>?)
-              ?.map((key, value) =>
-                  MapEntry(DateTime.parse(key), value.toDouble())) ??
-          {},
+      userId: json['userId'] as String,
+      dailyGoal: (json['dailyGoal'] as num).toInt(),
+      reminderInterval: (json['reminderInterval'] as num).toInt(),
+      selectedVolume: (json['selectedVolume'] as num).toInt(),
+      customVolume: (json['customVolume'] as num).toInt(),
+      remindersEnabled: json['remindersEnabled'] as bool,
+      selectedVolumeIndex: (json['selectedVolumeIndex'] as num).toInt(),
+      consumptionLogs: (json['consumptionLogs'] as List<dynamic>)
+          .map((log) => WaterLog.fromJson(log))
+          .toList(),
       lastReminderTime: json['lastReminderTime'] != null
-          ? DateTime.parse(json['lastReminderTime'])
+          ? DateTime.parse(json['lastReminderTime'] as String)
           : null,
     );
   }
 
   WaterModel copyWith({
     String? userId,
-    double? dailyGoal,
+    int? dailyGoal,
     int? reminderInterval,
-    double? selectedVolume,
-    double? customVolume,
+    int? selectedVolume,
+    int? customVolume,
+    int? selectedVolumeIndex,
     bool? remindersEnabled,
-    Map<DateTime, double>? dailyConsumption,
+    List<WaterLog>? consumptionLogs,
     DateTime? lastReminderTime,
   }) {
     return WaterModel(
@@ -68,9 +109,51 @@ class WaterModel {
       dailyGoal: dailyGoal ?? this.dailyGoal,
       reminderInterval: reminderInterval ?? this.reminderInterval,
       selectedVolume: selectedVolume ?? this.selectedVolume,
+      customVolume: customVolume ?? this.customVolume,
+      selectedVolumeIndex: selectedVolumeIndex ?? this.selectedVolumeIndex,
       remindersEnabled: remindersEnabled ?? this.remindersEnabled,
-      dailyConsumption: dailyConsumption ?? this.dailyConsumption,
+      consumptionLogs: consumptionLogs ?? this.consumptionLogs,
       lastReminderTime: lastReminderTime ?? this.lastReminderTime,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        userId,
+        dailyGoal,
+        reminderInterval,
+        selectedVolume,
+        customVolume,
+        remindersEnabled,
+        selectedVolumeIndex,
+        consumptionLogs,
+        lastReminderTime,
+      ];
+}
+
+class WaterLog extends Equatable {
+  final String id;
+  final DateTime timestamp;
+  final int amount;
+
+  const WaterLog({
+    required this.id,
+    required this.timestamp,
+    required this.amount,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'timestamp': timestamp.toIso8601String(),
+        'amount': amount,
+      };
+
+  factory WaterLog.fromJson(Map<String, dynamic> json) => WaterLog(
+        id: json['id'],
+        timestamp: DateTime.parse(json['timestamp']),
+        amount: (json['amount'] as num).toInt(),
+      );
+
+  @override
+  List<Object?> get props => [id, timestamp, amount];
 }

@@ -1,13 +1,16 @@
 // lib/repositories/auth_repository.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:health_pro/models/water_settings_model.dart';
-import 'package:health_pro/repositories/water_repository_old.dart';
+import 'package:health_pro/models/water_model.dart';
+import 'package:health_pro/repositories/water_repository.dart';
 import '../models/user_model.dart';
 
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final WaterRepository waterRepository;
+
+  AuthRepository({required this.waterRepository});
 
   // Register User
   Future<UserModel> registerUser({
@@ -45,20 +48,18 @@ class AuthRepository {
           throw Exception('Timeout: Failed to save user data');
         },
       );
-
-      // Setup default WaterSettings
-      final WaterSettingsModel defaultSettings = WaterSettingsModel(
+      // Step 5: Save default water settings
+      final defaultWaterModel = WaterModel(
         userId: user.id,
-        dailyGoal: 2000, // Default daily goal (in ml)
-        reminderInterval: 60, // Default interval (in minutes)
-        remindersEnabled: true, // Default reminders enabled
-        selectedVolume: 250, // Default volume (in ml)
-        customVolume: 350, // Default volume (in ml)
+        dailyGoal: 2000,
+        reminderInterval: 30,
+        selectedVolume: 250,
+        customVolume: 300,
+        selectedVolumeIndex: 0,
+        remindersEnabled: true,
       );
 
-      final waterRepository = WaterRepository();
-      await waterRepository.saveWaterSettings(defaultSettings);
-
+      await waterRepository.saveWaterModel(defaultWaterModel);
       return user;
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
