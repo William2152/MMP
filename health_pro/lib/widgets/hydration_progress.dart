@@ -35,6 +35,9 @@ class HydrationProgress extends StatelessWidget {
                   center: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      SizedBox(
+                        height: 25,
+                      ),
                       TweenAnimationBuilder<double>(
                         tween: Tween<double>(begin: 0, end: progress),
                         duration: const Duration(milliseconds: 500),
@@ -45,6 +48,13 @@ class HydrationProgress extends StatelessWidget {
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(1.0, 1.0), // Offset shadow
+                                  blurRadius: 10.0, // Blur intensity
+                                  color: Colors.grey, // Shadow color
+                                ),
+                              ],
                             ),
                           );
                         },
@@ -58,6 +68,13 @@ class HydrationProgress extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 18,
                               color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(1.0, 1.0), // Offset shadow
+                                  blurRadius: 10.0, // Blur intensity
+                                  color: Colors.grey, // Shadow color
+                                ),
+                              ],
                             ),
                           );
                         },
@@ -75,6 +92,13 @@ class HydrationProgress extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 14,
                               color: Colors.white70,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(1.0, 1.0), // Offset shadow
+                                  blurRadius: 10.0, // Blur intensity
+                                  color: Colors.grey, // Shadow color
+                                ),
+                              ],
                             ),
                           );
                         },

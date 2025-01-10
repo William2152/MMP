@@ -8,10 +8,10 @@ import 'package:health_pro/repositories/water_repository.dart';
 import 'package:health_pro/screens/account_screen.dart';
 import 'package:health_pro/screens/activity_tracker_screen.dart';
 import 'package:health_pro/screens/food_log_screen.dart';
-import 'package:health_pro/screens/getting_started_screen.dart';
 import 'package:health_pro/screens/home_screen.dart';
 import 'package:health_pro/screens/landing_screen.dart';
 import 'package:health_pro/screens/login_screen.dart';
+import 'package:health_pro/screens/onboarding_screen.dart';
 import 'package:health_pro/screens/water_screen.dart';
 import 'package:health_pro/widgets/navigation_wrapper.dart';
 import 'package:pedometer/pedometer.dart';
@@ -98,9 +98,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   final WaterRepository _waterRepository;
   final AuthRepository _authRepository;
-
-  // Create a GlobalKey for Navigator
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  String _currentRoute = '/'; // Add this to track current route
 
   _MyAppState()
       : _waterRepository = WaterRepository(AwesomeNotifications()),
@@ -120,14 +119,22 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  // Add this method to track route changes
+  void _updateCurrentRoute(String route) {
+    _currentRoute = route;
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Schedule navigation after the current frame is drawn
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          // Use the NavigatorState from the global key
-          _navigatorKey.currentState?.pushReplacementNamed('/');
+          // Refresh the current screen instead of navigating to landing
+          final currentState = _navigatorKey.currentState;
+          if (currentState != null) {
+            // Push the same route again to refresh
+            currentState.pushReplacementNamed(_currentRoute);
+          }
         }
       });
     }
@@ -145,8 +152,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         )
       ],
       child: MaterialApp(
-        navigatorKey:
-            _navigatorKey, // Pass the navigator key to the MaterialApp
+        navigatorKey: _navigatorKey,
         title: 'HealthPro App',
         theme: ThemeData(
           primaryColor: const Color(0xFF2D5A27),
@@ -155,11 +161,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           ),
         ),
         initialRoute: '/',
+        // Add navigator observers to track route changes
+        navigatorObservers: [
+          RouteObserver<PageRoute>(),
+          _CustomNavigatorObserver((route) => _updateCurrentRoute(route)),
+        ],
         routes: {
           '/': (context) => const LandingScreen(),
+          '/onboarding': (context) => const OnboardingScreen(),
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegisterScreen(),
-          '/get_start': (context) => GettingStartedScreen(),
           '/home': (context) => NavigationWrapper(
                 screen: const HomeScreen(),
                 showBottomBar: true,
@@ -183,5 +194,28 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         },
       ),
     );
+  }
+}
+
+// Add this custom navigator observer
+class _CustomNavigatorObserver extends NavigatorObserver {
+  final Function(String) onRouteChanged;
+
+  _CustomNavigatorObserver(this.onRouteChanged);
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (route.settings.name != null) {
+      onRouteChanged(route.settings.name!);
+    }
+    super.didPush(route, previousRoute);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    if (newRoute?.settings.name != null) {
+      onRouteChanged(newRoute!.settings.name!);
+    }
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
   }
 }

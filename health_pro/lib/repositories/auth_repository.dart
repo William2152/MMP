@@ -1,4 +1,3 @@
-// lib/repositories/auth_repository.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:health_pro/models/water_model.dart';
@@ -17,6 +16,9 @@ class AuthRepository {
     required String email,
     required String password,
     required String name,
+    required int age,
+    required double weight,
+    required double height,
   }) async {
     try {
       // Step 1: Create user in Firebase Auth
@@ -29,11 +31,14 @@ class AuthRepository {
       // Step 2: Update display name
       await userCredential.user?.updateDisplayName(name);
 
-      // Step 3: Create UserModel
+      // Step 3: Create UserModel with required fields
       final user = UserModel(
         id: userCredential.user!.uid,
         email: email,
         name: name,
+        age: age,
+        weight: weight,
+        height: height,
         createdAt: DateTime.now(),
       );
 
@@ -48,10 +53,11 @@ class AuthRepository {
           throw Exception('Timeout: Failed to save user data');
         },
       );
-      // Step 5: Save default water settings
+
+      // Step 5: Save water settings with personalized goal
       final defaultWaterModel = WaterModel(
         userId: user.id,
-        dailyGoal: 2000,
+        dailyGoal: _calculateWaterGoal(weight, age),
         reminderInterval: 30,
         selectedVolume: 250,
         customVolume: 300,
@@ -78,6 +84,26 @@ class AuthRepository {
     }
   }
 
+  // Calculate daily water goal based on weight and age
+  int _calculateWaterGoal(double? weight, int? age) {
+    if (weight == null) {
+      return 2000; // Default goal if no weight provided
+    }
+
+    // Basic calculation: 30-35ml per kg of body weight
+    // Adjust based on age if available
+    double multiplier = 33; // Default multiplier
+    if (age != null) {
+      if (age < 30) {
+        multiplier = 35;
+      } else if (age > 55) {
+        multiplier = 30;
+      }
+    }
+
+    return (weight * multiplier).round();
+  }
+
   // login user
   Future<UserModel> loginUser({
     required String email,
@@ -93,6 +119,10 @@ class AuthRepository {
           .collection('users')
           .doc(userCredential.user?.uid)
           .get();
+
+      if (!userDoc.exists) {
+        throw 'User data not found';
+      }
 
       return UserModel.fromJson(userDoc.data()!);
     } on FirebaseAuthException catch (e) {

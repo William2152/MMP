@@ -68,7 +68,7 @@ class _LandingScreenState extends State<LandingScreen>
     } catch (e) {
       debugPrint('Navigation error: $e');
       if (mounted && !_isNavigating) {
-        await _performNavigationWithAnimation('/login');
+        await _performNavigationWithAnimation('/onboarding');
       }
     }
   }
@@ -98,7 +98,7 @@ class _LandingScreenState extends State<LandingScreen>
           await _performNavigationWithAnimation('/home');
         } else if ((state is AuthUnauthenticated || state is AuthError) &&
             !_isNavigating) {
-          await _performNavigationWithAnimation('/login');
+          await _performNavigationWithAnimation('/onboarding');
         }
       },
       child: Scaffold(

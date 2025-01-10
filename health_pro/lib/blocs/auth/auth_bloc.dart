@@ -1,5 +1,4 @@
 // lib/blocs/auth/auth_bloc.dart
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../repositories/auth_repository.dart';
 import 'auth_event.dart';
@@ -18,6 +17,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           email: event.email,
           password: event.password,
           name: event.name,
+          age: event.age,
+          weight: event.weight,
+          height: event.height,
         );
 
         emit(AuthRegistrationSuccess(user));
@@ -26,6 +28,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
+    // Handle Login
     on<LoginUser>((event, emit) async {
       try {
         emit(AuthLoading());
@@ -39,7 +42,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
-    // Handle Reset Error (untuk menghapus state error)
+    // Handle Reset Error
     on<ResetAuthError>((event, emit) {
       emit(AuthInitial());
     });

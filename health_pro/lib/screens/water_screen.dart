@@ -1,7 +1,6 @@
 // lib\screens\water_screen.dart
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_pro/blocs/auth/auth_bloc.dart';
 import 'package:health_pro/blocs/auth/auth_state.dart';
@@ -14,7 +13,6 @@ import 'package:health_pro/widgets/settings_tab.dart';
 import 'package:health_pro/widgets/water_analytics_tab.dart';
 import 'package:health_pro/widgets/water_volume_selection.dart';
 import 'package:intl/intl.dart';
-import 'dart:math';
 
 class WaterScreen extends StatefulWidget {
   const WaterScreen({Key? key}) : super(key: key);
@@ -99,49 +97,15 @@ class _WaterScreenState extends State<WaterScreen>
               onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
-              child: const Text('Enable'),
+              child: const Text('Setting'),
               onPressed: () async {
-                Navigator.of(context).pop();
-                await _requestNotificationPermission();
+                AwesomeNotifications().showNotificationConfigPage();
               },
             ),
           ],
         );
       },
     );
-  }
-
-  Future<void> _requestNotificationPermission() async {
-    try {
-      final isAllowed =
-          await AwesomeNotifications().requestPermissionToSendNotifications();
-      if (!isAllowed) {
-        // If permission denied, show instructions for manual enable
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                  'Please enable notifications in system settings to receive reminders'),
-              action: SnackBarAction(
-                label: 'Settings',
-                onPressed: () =>
-                    AwesomeNotifications().showNotificationConfigPage(),
-              ),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      print('Error requesting notification permission: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Unable to request notification permissions. Please check system settings.'),
-          ),
-        );
-      }
-    }
   }
 
   @override
@@ -235,37 +199,6 @@ class _WaterScreenState extends State<WaterScreen>
           return const Center(child: Text('Something went wrong'));
         },
       ),
-    );
-  }
-
-  Widget _buildNotificationPermissionBanner(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: AwesomeNotifications().isNotificationAllowed(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData && !snapshot.data!) {
-          return Container(
-            color: Colors.yellow[700],
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Enable notifications for reminders.',
-                  style: TextStyle(color: Colors.black),
-                ),
-                TextButton(
-                  onPressed: () => _requestNotificationPermission(),
-                  child: const Text(
-                    'Enable',
-                    style: TextStyle(color: Colors.blue),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        return const SizedBox.shrink();
-      },
     );
   }
 

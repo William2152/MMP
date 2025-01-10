@@ -7,8 +7,6 @@ class UserModel {
   final double? weight;
   final double? height;
   final int? age;
-  final Map<String, dynamic>? healthData; // Untuk menyimpan data kesehatan user
-  final Map<String, dynamic>? preferences; // Untuk menyimpan preferensi user
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -19,8 +17,6 @@ class UserModel {
     this.weight,
     this.height,
     this.age,
-    this.healthData,
-    this.preferences,
     required this.createdAt,
     this.updatedAt,
   });
@@ -34,8 +30,6 @@ class UserModel {
       'height': height,
       'weight': weight,
       'age': age,
-      'healthData': healthData,
-      'preferences': preferences,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -50,8 +44,6 @@ class UserModel {
       height: json['height'],
       weight: json['weight'],
       age: json['age'],
-      healthData: json['healthData'],
-      preferences: json['preferences'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt:
           json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
@@ -78,8 +70,6 @@ class UserModel {
       height: height ?? this.height,
       weight: weight ?? this.weight,
       age: age ?? this.age,
-      healthData: healthData ?? this.healthData,
-      preferences: preferences ?? this.preferences,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

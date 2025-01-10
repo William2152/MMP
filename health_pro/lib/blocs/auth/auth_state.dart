@@ -1,3 +1,4 @@
+// lib/blocs/auth/auth_state.dart
 import 'package:equatable/equatable.dart';
 import '../../models/user_model.dart';
 
