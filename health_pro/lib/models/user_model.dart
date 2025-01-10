@@ -4,9 +4,9 @@ class UserModel {
   final String id;
   final String email;
   final String name;
-  final double? weight;
-  final double? height;
-  final int? age;
+  final int weight;
+  final int height;
+  final int age;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -14,9 +14,9 @@ class UserModel {
     required this.id,
     required this.email,
     required this.name,
-    this.weight,
-    this.height,
-    this.age,
+    required this.weight,
+    required this.height,
+    required this.age,
     required this.createdAt,
     this.updatedAt,
   });
@@ -55,8 +55,8 @@ class UserModel {
     String? id,
     String? email,
     String? name,
-    double? height,
-    double? weight,
+    int? height,
+    int? weight,
     int? age,
     Map<String, dynamic>? healthData,
     Map<String, dynamic>? preferences,

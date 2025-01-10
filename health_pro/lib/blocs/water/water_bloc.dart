@@ -122,10 +122,29 @@ class WaterBloc extends Bloc<WaterEvent, WaterState> {
     if (state is WaterLoadedState) {
       try {
         final currentState = state as WaterLoadedState;
+
+        // Hitung target konsumsi air berdasarkan berat badan dan usia
+        final int weight = event.weight; // Berat badan dalam kilogram
+        final int age = event.age; // Usia dalam tahun
+
+        int dailyGoal = (weight * 35); // Standar: 30ml per kg berat badan
+        if (age < 18) {
+          dailyGoal += 500; // Tambah 500 ml untuk remaja
+        } else if (age > 55) {
+          dailyGoal -= 500; // Kurangi 500 ml untuk usia lanjut
+        }
+
+        // Pastikan dailyGoal kelipatan 50
+        if (dailyGoal % 50 != 0) {
+          dailyGoal =
+              (dailyGoal / 50).ceil() * 50; // Pembulatan ke kelipatan 50
+        }
+
+        // Perbarui model dengan target yang direkomendasikan
         final updatedModel = currentState.model.copyWith(
-          dailyGoal: 2000,
-          reminderInterval: 30,
-          customVolume: 300,
+          dailyGoal: dailyGoal,
+          reminderInterval: 30, // Interval tetap 30 menit
+          customVolume: 300, // Volume custom tetap 300 ml
           selectedVolume: currentState.model.selectedVolumeIndex == 3
               ? 300
               : currentState.model.selectedVolume,

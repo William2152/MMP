@@ -13,8 +13,8 @@ class RegisterUser extends AuthEvent {
   final String name;
   final String password;
   final int age;
-  final double weight;
-  final double height;
+  final int weight;
+  final int height;
 
   const RegisterUser({
     required this.email,

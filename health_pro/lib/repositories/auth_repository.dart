@@ -17,8 +17,8 @@ class AuthRepository {
     required String password,
     required String name,
     required int age,
-    required double weight,
-    required double height,
+    required int weight,
+    required int height,
   }) async {
     try {
       // Step 1: Create user in Firebase Auth
@@ -85,23 +85,20 @@ class AuthRepository {
   }
 
   // Calculate daily water goal based on weight and age
-  int _calculateWaterGoal(double? weight, int? age) {
-    if (weight == null) {
-      return 2000; // Default goal if no weight provided
+  int _calculateWaterGoal(int weight, int age) {
+    int dailyGoal = (weight * 35); // Standar: 30ml per kg berat badan
+    if (age < 18) {
+      dailyGoal += 500; // Tambah 500 ml untuk remaja
+    } else if (age > 55) {
+      dailyGoal -= 500; // Kurangi 500 ml untuk usia lanjut
     }
 
-    // Basic calculation: 30-35ml per kg of body weight
-    // Adjust based on age if available
-    double multiplier = 33; // Default multiplier
-    if (age != null) {
-      if (age < 30) {
-        multiplier = 35;
-      } else if (age > 55) {
-        multiplier = 30;
-      }
+    // Pastikan dailyGoal kelipatan 50
+    if (dailyGoal % 50 != 0) {
+      dailyGoal =
+          ((dailyGoal + 25) / 50).floor() * 50; // Pembulatan ke kelipatan 50
     }
-
-    return (weight * multiplier).round();
+    return dailyGoal;
   }
 
   // login user
@@ -143,20 +140,14 @@ class AuthRepository {
       final User? currentUser = _auth.currentUser;
 
       if (currentUser != null) {
-        // Get additional user data from Firestore
+        // Ambil data pengguna dari Firestore
         final DocumentSnapshot doc =
             await _firestore.collection('users').doc(currentUser.uid).get();
 
         if (doc.exists && doc.data() != null) {
           return UserModel.fromJson(doc.data() as Map<String, dynamic>);
         } else {
-          // Return basic user data if Firestore document doesn't exist
-          return UserModel(
-            id: currentUser.uid,
-            email: currentUser.email ?? '',
-            name: currentUser.displayName ?? '',
-            createdAt: DateTime.now(),
-          );
+          throw Exception('User data not found in Firestore');
         }
       }
       return null;

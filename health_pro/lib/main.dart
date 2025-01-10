@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_pro/blocs/water/water_bloc.dart';
+import 'package:health_pro/models/step_activity.dart';
+import 'package:health_pro/repositories/activity_repository.dart';
 import 'package:health_pro/repositories/water_repository.dart';
 import 'package:health_pro/screens/account_screen.dart';
 import 'package:health_pro/screens/activity_tracker_screen.dart';
@@ -12,6 +14,7 @@ import 'package:health_pro/screens/home_screen.dart';
 import 'package:health_pro/screens/landing_screen.dart';
 import 'package:health_pro/screens/login_screen.dart';
 import 'package:health_pro/screens/onboarding_screen.dart';
+import 'package:health_pro/screens/vision_screen.dart';
 import 'package:health_pro/screens/water_screen.dart';
 import 'package:health_pro/widgets/navigation_wrapper.dart';
 import 'package:pedometer/pedometer.dart';
@@ -24,7 +27,7 @@ Future<void> main() async {
   await Firebase.initializeApp();
 
   AwesomeNotifications().initialize(
-    null, // Ganti dengan ikon Anda
+    null,
     [
       NotificationChannel(
         channelKey: 'water_reminder',
@@ -45,8 +48,47 @@ Future<void> main() async {
     ],
   );
 
-  await initializeBackgroundService(); // Inisialisasi background service
+  await initializeBackgroundService();
   runApp(MyApp());
+}
+
+@pragma('vm:entry-point')
+Future<void> onStart(ServiceInstance service) async {
+  // Set foreground notification immediately for Android
+  if (service is AndroidServiceInstance) {
+    // Must be called within 5 seconds on Android
+    await service.setAsForegroundService();
+    await service.setForegroundNotificationInfo(
+      title: "HealthPro Pedometer",
+      content: "Tracking steps in background...",
+    );
+  }
+
+  final repository = ActivityRepository();
+
+  try {
+    Pedometer.stepCountStream.listen((StepCount event) {
+      final steps = event.steps;
+      final distance = steps * 0.78 / 1000;
+      final calories = steps * 0.05;
+      final now = DateTime.now();
+
+      repository.saveActivity(StepActivity(
+        id: 'background_${now.toIso8601String()}',
+        userId: 'current_user_id',
+        steps: steps,
+        distance: distance,
+        calories: calories,
+        date: now.toIso8601String(),
+        lastUpdated: now,
+        isSynced: false,
+      ));
+    }, onError: (error) {
+      print('Pedometer error: $error');
+    });
+  } catch (e) {
+    print('Error initializing step counter: $e');
+  }
 }
 
 Future<void> initializeBackgroundService() async {
@@ -58,36 +100,16 @@ Future<void> initializeBackgroundService() async {
       isForegroundMode: true,
       autoStart: true,
       autoStartOnBoot: true,
+      foregroundServiceNotificationId: 888, // Add a unique notification ID
     ),
     iosConfiguration: IosConfiguration(
       onForeground: onStart,
-      onBackground: (service) => true, // Log or handle as needed
+      onBackground: (service) => true,
       autoStart: true,
     ),
   );
 
   await service.startService();
-}
-
-@pragma('vm:entry-point')
-Future<void> onStart(ServiceInstance service) async {
-  if (service is AndroidServiceInstance) {
-    service.setForegroundNotificationInfo(
-      title: "HealthPro Pedometer",
-      content: "Tracking steps in background...",
-    );
-  }
-
-  // Handle stop event
-  service.on("stop").listen((event) {
-    service.stopSelf();
-  });
-
-  // Track step count in the background
-  Pedometer.stepCountStream.listen((StepCount event) {
-    final stepData = {"steps": event.steps};
-    service.invoke("update_steps", stepData);
-  });
 }
 
 class MyApp extends StatefulWidget {
@@ -98,14 +120,16 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   final WaterRepository _waterRepository;
   final AuthRepository _authRepository;
+  final ActivityRepository _activityRepository;
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-  String _currentRoute = '/'; // Add this to track current route
+  String _currentRoute = '/';
 
   _MyAppState()
       : _waterRepository = WaterRepository(AwesomeNotifications()),
         _authRepository = AuthRepository(
           waterRepository: WaterRepository(AwesomeNotifications()),
-        );
+        ),
+        _activityRepository = ActivityRepository();
 
   @override
   void initState() {
@@ -119,7 +143,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  // Add this method to track route changes
   void _updateCurrentRoute(String route) {
     _currentRoute = route;
   }
@@ -129,10 +152,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          // Refresh the current screen instead of navigating to landing
           final currentState = _navigatorKey.currentState;
           if (currentState != null) {
-            // Push the same route again to refresh
             currentState.pushReplacementNamed(_currentRoute);
           }
         }
@@ -157,11 +178,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         theme: ThemeData(
           primaryColor: const Color(0xFF2D5A27),
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFFE3F4E9),
+            seedColor: Colors.white,
           ),
         ),
         initialRoute: '/',
-        // Add navigator observers to track route changes
         navigatorObservers: [
           RouteObserver<PageRoute>(),
           _CustomNavigatorObserver((route) => _updateCurrentRoute(route)),
@@ -191,13 +211,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 screen: const WaterScreen(),
                 showBottomBar: true,
               ),
+          '/vision': (context) => NavigationWrapper(
+                screen: const VisionScreen(),
+                showBottomBar: true,
+              ),
         },
       ),
     );
   }
 }
 
-// Add this custom navigator observer
 class _CustomNavigatorObserver extends NavigatorObserver {
   final Function(String) onRouteChanged;
 

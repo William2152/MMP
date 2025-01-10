@@ -22,6 +22,10 @@ class CustomMonthYearPicker extends StatefulWidget {
   }) {
     return showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (BuildContext context) {
         return CustomMonthYearPicker(
           initialDate: initialDate,
@@ -39,8 +43,9 @@ class CustomMonthYearPicker extends StatefulWidget {
 class _CustomMonthYearPickerState extends State<CustomMonthYearPicker> {
   late FixedExtentScrollController _monthController;
   late FixedExtentScrollController _yearController;
-  late int _currentSelectedYear;
-  late int _currentSelectedMonth;
+  late DateTime _selectedDate;
+  late int _selectedYearIndex;
+  late int _selectedMonthIndex;
 
   @override
   void initState() {
@@ -49,19 +54,23 @@ class _CustomMonthYearPickerState extends State<CustomMonthYearPicker> {
   }
 
   void _initializeControllers() {
-    // Set initial values
-    _currentSelectedYear = widget.initialDate.year;
-    _currentSelectedMonth = widget.initialDate.month;
+    _selectedDate = widget.initialDate;
 
-    // Calculate initial indices for controllers
-    int initialMonthIndex = widget.initialDate.month - 1;
-    int initialYearIndex = widget.initialDate.year - widget.createdAt.year;
+    // Calculate initial indices
+    _selectedYearIndex = _selectedDate.year - widget.createdAt.year;
+    _selectedMonthIndex =
+        _getMonthIndex(_selectedDate.year, _selectedDate.month);
 
-    // Initialize controllers
+    // Initialize controllers with calculated indices
     _monthController =
-        FixedExtentScrollController(initialItem: initialMonthIndex);
+        FixedExtentScrollController(initialItem: _selectedMonthIndex);
     _yearController =
-        FixedExtentScrollController(initialItem: initialYearIndex);
+        FixedExtentScrollController(initialItem: _selectedYearIndex);
+  }
+
+  int _getMonthIndex(int year, int month) {
+    final startMonth = _getStartMonth(year);
+    return month - startMonth;
   }
 
   @override
@@ -71,30 +80,38 @@ class _CustomMonthYearPickerState extends State<CustomMonthYearPicker> {
     super.dispose();
   }
 
-  int _getStartMonth(int selectedYear) {
-    // For the account creation year, start from creation month
-    if (selectedYear == widget.createdAt.year) {
+  int _getStartMonth(int year) {
+    if (year == widget.createdAt.year) {
       return widget.createdAt.month;
     }
-    // For other years, start from January
     return 1;
   }
 
-  int _getAvailableMonths(int selectedYear) {
+  int _getEndMonth(int year) {
     final now = DateTime.now();
-    // For the current year, only show up to current month
-    if (selectedYear == now.year) {
+    if (year == now.year) {
       return now.month;
     }
-    // For other years, show all months
     return 12;
+  }
+
+  List<int> _getAvailableYears() {
+    final now = DateTime.now();
+    final years = <int>[];
+    for (int year = widget.createdAt.year; year <= now.year; year++) {
+      years.add(year);
+    }
+    return years;
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 300,
-      color: Colors.white,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       child: Column(
         children: [
           _buildHeader(),
@@ -113,7 +130,7 @@ class _CustomMonthYearPickerState extends State<CustomMonthYearPicker> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
@@ -129,18 +146,16 @@ class _CustomMonthYearPickerState extends State<CustomMonthYearPicker> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          const Text(
-            'Select Date',
-            style: TextStyle(
+          Text(
+            DateFormat('MMMM yyyy').format(_selectedDate),
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
           TextButton(
             onPressed: () {
-              widget.onDateSelected(
-                DateTime(_currentSelectedYear, _currentSelectedMonth, 1),
-              );
+              widget.onDateSelected(_selectedDate);
               Navigator.pop(context);
             },
             child: const Text('Done'),
@@ -151,55 +166,56 @@ class _CustomMonthYearPickerState extends State<CustomMonthYearPicker> {
   }
 
   Widget _buildYearPicker() {
-    final now = DateTime.now();
+    final years = _getAvailableYears();
     return CupertinoPicker(
       itemExtent: 40,
       scrollController: _yearController,
       onSelectedItemChanged: (index) {
+        final selectedYear = years[index];
+        final startMonth = _getStartMonth(selectedYear);
+        final endMonth = _getEndMonth(selectedYear);
+
         setState(() {
-          _currentSelectedYear = widget.createdAt.year + index;
-
           // Adjust month if needed
-          final startMonth = _getStartMonth(_currentSelectedYear);
-          final availableMonths = _getAvailableMonths(_currentSelectedYear);
-
-          if (_currentSelectedMonth < startMonth) {
-            _currentSelectedMonth = startMonth;
-            _monthController.jumpToItem(startMonth - 1);
-          } else if (_currentSelectedMonth > availableMonths) {
-            _currentSelectedMonth = availableMonths;
-            _monthController.jumpToItem(availableMonths - 1);
+          if (_selectedDate.month < startMonth) {
+            _selectedDate = DateTime(selectedYear, startMonth);
+            _monthController.jumpToItem(0);
+          } else if (_selectedDate.month > endMonth) {
+            _selectedDate = DateTime(selectedYear, endMonth);
+            _monthController.jumpToItem(endMonth - startMonth);
+          } else {
+            _selectedDate = DateTime(selectedYear, _selectedDate.month);
           }
         });
       },
-      children: List.generate(
-        now.year - widget.createdAt.year + 1,
-        (index) {
-          return Center(
-            child: Text(
-              '${widget.createdAt.year + index}',
-              style: const TextStyle(fontSize: 16),
-            ),
-          );
-        },
-      ),
+      children: years.map((year) {
+        return Center(
+          child: Text(
+            year.toString(),
+            style: const TextStyle(fontSize: 16),
+          ),
+        );
+      }).toList(),
     );
   }
 
   Widget _buildMonthPicker() {
-    final startMonth = _getStartMonth(_currentSelectedYear);
-    final availableMonths = _getAvailableMonths(_currentSelectedYear);
+    final startMonth = _getStartMonth(_selectedDate.year);
+    final endMonth = _getEndMonth(_selectedDate.year);
 
     return CupertinoPicker(
       itemExtent: 40,
       scrollController: _monthController,
       onSelectedItemChanged: (index) {
         setState(() {
-          _currentSelectedMonth = startMonth + index;
+          _selectedDate = DateTime(
+            _selectedDate.year,
+            startMonth + index,
+          );
         });
       },
       children: List.generate(
-        availableMonths - startMonth + 1,
+        endMonth - startMonth + 1,
         (index) {
           final month = startMonth + index;
           return Center(

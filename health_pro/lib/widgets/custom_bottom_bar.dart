@@ -47,6 +47,11 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
       'label': 'Account',
       'route': '/account',
     },
+    {
+      'icon': Icons.person,
+      'label': 'Vision',
+      'route': '/vision',
+    },
   ];
 
   @override
@@ -68,8 +73,9 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _navigationItems.map((item) {
-              final int itemIndex = _navigationItems.indexOf(item);
+            children: _navigationItems.asMap().entries.map((entry) {
+              final int itemIndex = entry.key;
+              final Map<String, dynamic> item = entry.value;
               final bool isSelected = widget.currentIndex == itemIndex;
 
               return Expanded(

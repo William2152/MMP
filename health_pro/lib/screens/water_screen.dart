@@ -139,7 +139,9 @@ class _WaterScreenState extends State<WaterScreen>
 
   Widget _buildWaterScreen(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: const Text(
           'Water',
           style: TextStyle(
@@ -238,7 +240,16 @@ class _WaterScreenState extends State<WaterScreen>
   }
 
   Widget _buildAnalyticsTab(BuildContext context, WaterModel model) {
-    return WaterAnalyticsTab(model: model);
+    final authState = context.read<AuthBloc>().state;
+
+    if (authState is AuthSuccess) {
+      return WaterAnalyticsTab(
+        model: model,
+        accountCreatedAt: authState.user.createdAt, // Pass createdAt ke tab
+      );
+    }
+
+    return const Center(child: Text("Authentication failed"));
   }
 
   Widget _buildSettingsTab(BuildContext context, WaterModel model) {
@@ -256,9 +267,19 @@ class _WaterScreenState extends State<WaterScreen>
             );
       },
       onUseRecommendedSettings: () {
-        context.read<WaterBloc>().add(
-              const UseRecommendedSettingsEvent(),
-            );
+        final authState = context.read<AuthBloc>().state;
+        if (authState is AuthSuccess) {
+          context.read<WaterBloc>().add(
+                UseRecommendedSettingsEvent(
+                  age: authState.user.age,
+                  weight: authState.user.weight.toInt(),
+                ),
+              );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to load user data')),
+          );
+        }
       },
     );
   }

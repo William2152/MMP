@@ -59,6 +59,9 @@ final class UpdateVolumeSelectionEvent extends WaterEvent {
   List<Object?> get props => [index];
 }
 
-final class UseRecommendedSettingsEvent extends WaterEvent {
-  const UseRecommendedSettingsEvent();
+class UseRecommendedSettingsEvent extends WaterEvent {
+  final int weight; // Berat badan dalam kilogram
+  final int age; // Usia dalam tahun
+
+  const UseRecommendedSettingsEvent({required this.weight, required this.age});
 }

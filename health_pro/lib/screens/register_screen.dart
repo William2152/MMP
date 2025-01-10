@@ -21,6 +21,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _weightController = TextEditingController();
   final _heightController = TextEditingController();
 
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: Color(0xFF2D5A27),
+                  size: 50,
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Registration Successful!',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Your account has been created successfully.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Logging you in...',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const CircularProgressIndicator(
+                  color: Color(0xFF2D5A27),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -81,11 +133,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: SafeArea(
         child: BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
-            if (state is AuthSuccess) {
+            if (state is AuthRegistrationSuccess) {
+              _showSuccessDialog();
+              // After successful registration, attempt login
+              context.read<AuthBloc>().add(
+                    LoginUser(
+                      email: _emailController.text,
+                      password: _passwordController.text,
+                    ),
+                  );
+            } else if (state is AuthSuccess) {
+              // After successful login, navigate to home
+              Navigator.of(context).pop(); // Close dialog if open
               Navigator.pushReplacementNamed(context, '/home');
+            } else if (state is AuthRegistrationError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
             } else if (state is AuthError) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
               );
             }
           },
@@ -121,18 +194,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(height: 30),
-
-                    // Account Information Section
-                    const Text(
-                      'Account Information',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF2D5A27),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
                     _buildTextField(
                       label: 'Email',
                       controller: _emailController,
@@ -192,17 +253,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                       hintText: 'Confirm your password',
                     ),
-                    const SizedBox(height: 30),
-
-                    // Health Information Section
-                    const Text(
-                      'Health Information',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF2D5A27),
-                      ),
-                    ),
                     const SizedBox(height: 20),
 
                     _buildTextField(
@@ -252,9 +302,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                                   _passwordController.text,
                                               age: int.parse(
                                                   _ageController.text),
-                                              weight: double.parse(
+                                              weight: int.parse(
                                                   _weightController.text),
-                                              height: double.parse(
+                                              height: int.parse(
                                                   _heightController.text),
                                             ),
                                           );

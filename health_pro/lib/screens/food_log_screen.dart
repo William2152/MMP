@@ -83,6 +83,15 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Add your navigation logic here
+          // For example: Navigator.pushNamed(context, '/visionAttachment');
+        },
+        backgroundColor: const Color(0xFF4CAF50),
+        child: const Icon(Icons.camera_alt),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -94,6 +103,11 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
       onDateSelected: (DateTime date) {
         setState(() {
           selectedDate = date;
+          // Reset dates list untuk kalendar harian
+          dates = List.generate(
+            7,
+            (index) => date.subtract(Duration(days: 3 - index)),
+          );
         });
       },
     );

@@ -17,19 +17,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       'title': 'Track Your Daily Steps',
       'description':
           'Stay active and healthy by monitoring your daily steps and activities',
-      'image': 'assets/step_tracker.png'
+      'image': 'assets/images/run.png'
     },
     {
       'title': 'Water Intake Reminder',
       'description':
           'Stay hydrated with timely water drinking reminders throughout your day',
-      'image': 'assets/water_reminder.png'
+      'image': 'assets/images/drink.png'
     },
     {
       'title': 'Count Your Calories',
       'description':
           'Monitor your daily calorie intake and maintain a balanced diet',
-      'image': 'assets/nutrition_tracker.png'
+      'image': 'assets/images/eat.png'
     },
   ];
 

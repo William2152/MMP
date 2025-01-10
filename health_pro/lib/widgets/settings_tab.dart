@@ -109,7 +109,7 @@ class _SettingsTabState extends State<SettingsTab> {
                 widget.onUseRecommendedSettings();
                 // Update local values after recommended settings are applied
                 setState(() {
-                  _initializeValues();
+                  // _initializeValues();
                 });
               },
               child: const Text('Use Recommended Settings'),
