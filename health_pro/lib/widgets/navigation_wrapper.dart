@@ -1,3 +1,4 @@
+// navigation_wrapper.dart
 import 'package:flutter/material.dart';
 import 'custom_bottom_bar.dart';
 
@@ -8,9 +9,9 @@ class NavigationWrapper extends StatefulWidget {
   static const List<String> screensWithBottomBar = [
     '/home',
     '/activity',
+    '/water', // Fixed missing comma
     '/food_log',
     '/account',
-    '/water'
   ];
 
   const NavigationWrapper({
@@ -24,17 +25,26 @@ class NavigationWrapper extends StatefulWidget {
 }
 
 class _NavigationWrapperState extends State<NavigationWrapper> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = 0;
+  }
 
   void _onNavigate(int index, String route) {
-    setState(() {
-      _currentIndex = index;
-    });
+    if (mounted) {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
     Navigator.pushReplacementNamed(context, route);
   }
 
   int _getCurrentIndex(String route) {
-    return NavigationWrapper.screensWithBottomBar.indexOf(route);
+    final index = NavigationWrapper.screensWithBottomBar.indexOf(route);
+    return index != -1 ? index : 0; // Return 0 if route not found
   }
 
   @override

@@ -1,3 +1,4 @@
+// custom_bottom_bar.dart
 import 'package:flutter/material.dart';
 
 class CustomBottomBar extends StatefulWidget {
@@ -21,7 +22,7 @@ class CustomBottomBar extends StatefulWidget {
 }
 
 class _CustomBottomBarState extends State<CustomBottomBar> {
-  final List<Map<String, dynamic>> _navigationItems = [
+  static const List<Map<String, dynamic>> navigationItems = [
     {
       'icon': Icons.home,
       'label': 'Home',
@@ -68,7 +69,7 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _navigationItems.asMap().entries.map((entry) {
+            children: navigationItems.asMap().entries.map((entry) {
               final int itemIndex = entry.key;
               final Map<String, dynamic> item = entry.value;
               final bool isSelected = widget.currentIndex == itemIndex;
