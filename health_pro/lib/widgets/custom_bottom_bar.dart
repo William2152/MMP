@@ -47,11 +47,6 @@ class _CustomBottomBarState extends State<CustomBottomBar> {
       'label': 'Account',
       'route': '/account',
     },
-    {
-      'icon': Icons.person,
-      'label': 'Vision',
-      'route': '/vision',
-    },
   ];
 
   @override

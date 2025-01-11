@@ -85,8 +85,7 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Add your navigation logic here
-          // For example: Navigator.pushNamed(context, '/visionAttachment');
+          Navigator.pushNamed(context, '/vision');
         },
         backgroundColor: const Color(0xFF4CAF50),
         child: const Icon(Icons.camera_alt),
