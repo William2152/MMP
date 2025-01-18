@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:health_pro/widgets/custom_month_year_picker.dart';
@@ -77,21 +78,29 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
       body: Column(
         children: [
           _buildDateSelector(),
-          _buildCaloriesRemaining(),
           Expanded(
             child: _buildTimelineView(),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/vision');
-        },
-        backgroundColor: const Color(0xFF4CAF50),
-        child: const Icon(Icons.camera_alt),
-      ),
+      floatingActionButton: _isToday(selectedDate)
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/vision');
+              },
+              backgroundColor: const Color(0xFF4CAF50),
+              child: const Icon(Icons.camera_alt),
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
+  }
+
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   void _showDatePicker(UserModel user) {
@@ -165,7 +174,12 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
     );
   }
 
-  Widget _buildCaloriesRemaining() {
+  Widget _buildCaloriesRemaining(int totalFoodCalories) {
+    const int goalCalories = 2000; // Ganti sesuai kebutuhan
+    const int exerciseCalories = 0; // Tambahkan jika ada data olahraga
+    final int remainingCalories =
+        goalCalories - totalFoodCalories + exerciseCalories;
+
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -182,13 +196,13 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildCalorieBox('1,064', 'Goal'),
+              _buildCalorieBox('$goalCalories', 'Goal'),
               const Text('-', style: TextStyle(fontSize: 20)),
-              _buildCalorieBox('0', 'Food'),
+              _buildCalorieBox('$totalFoodCalories', 'Food'),
               const Text('+', style: TextStyle(fontSize: 20)),
-              _buildCalorieBox('0', 'Exercise'),
+              _buildCalorieBox('$exerciseCalories', 'Exercise'),
               const Text('=', style: TextStyle(fontSize: 20)),
-              _buildCalorieBox('1,064', 'Remaining'),
+              _buildCalorieBox('$remainingCalories', 'Remaining'),
             ],
           ),
         ],
@@ -220,111 +234,199 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
   }
 
   Widget _buildTimelineView() {
-    final meals = [
-      _MealEntry(
-        time: '7:00 AM',
-        title: 'Breakfast',
-        food: 'Overnight oat',
-        calories: 280,
-        color: const Color(0xFFE8F5E9),
-      ),
-      _MealEntry(
-        time: '9:00 AM',
-        title: 'Snacks',
-        food: 'Banana',
-        calories: 88.7,
-        color: const Color(0xFFE8F5E9),
-      ),
-      _MealEntry(
-        time: '1:00 PM',
-        title: 'Lunch',
-        food: 'Banana',
-        calories: 88.7,
-        color: const Color(0xFFFFF3E0),
-      ),
-    ];
+    final userId =
+        (BlocProvider.of<AuthBloc>(context).state as AuthSuccess).user.id;
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 24, // Show all hours
-      itemBuilder: (context, index) {
-        final hour = index + 1;
-        final time =
-            '${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}';
-        final meal = meals.firstWhere(
-          (m) => m.time == time,
-          orElse: () => _MealEntry(
-              time: time,
-              title: '',
-              food: '',
-              calories: 0,
-              color: Colors.transparent),
+    // Hitung awal dan akhir hari dari tanggal yang dipilih
+    final startOfDay =
+        DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final endOfDay = DateTime(
+        selectedDate.year, selectedDate.month, selectedDate.day, 23, 59, 59);
+
+    const int goalCalories = 2000; // Target kalori statis (bisa disesuaikan)
+    int foodCalories = 0; // Total kalori makanan
+    int exerciseCalories = 0; // Kalori yang dibakar dari latihan
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('calorie_food_tracking')
+          .where('userId', isEqualTo: userId)
+          .where('timestamp', isGreaterThanOrEqualTo: startOfDay)
+          .where('timestamp', isLessThanOrEqualTo: endOfDay)
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        // Siapkan daftar per jam (kosong jika tidak ada data)
+        final Map<int, List<_MealEntry>> hourlyMeals = Map.fromIterable(
+          List.generate(24, (index) => index), // Jam 0 - 23
+          key: (hour) => hour,
+          value: (hour) => [],
         );
+
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          final documents = snapshot.data!.docs;
+
+          for (var doc in documents) {
+            final data = doc.data() as Map<String, dynamic>;
+            final foods = data['foods'] as List<dynamic>;
+            final timestamp = (data['timestamp'] as Timestamp).toDate();
+
+            // Ambil jam dari timestamp
+            final hour = timestamp.hour;
+
+            for (var food in foods) {
+              final calories = (food['calories'] as num).toDouble();
+              hourlyMeals[hour]?.add(_MealEntry(
+                time: DateFormat('h:mm a').format(timestamp),
+                title: data['category'], // Menggunakan kategori
+                food: food['name'],
+                calories: calories,
+                color: _getCategoryColor(
+                    data['category']), // Warna berdasarkan kategori
+              ));
+              foodCalories += calories.toInt(); // Tambahkan kalori makanan
+            }
+          }
+        }
+
+        // Hitung Calories Remaining
+        final int caloriesRemaining =
+            goalCalories - foodCalories + exerciseCalories;
 
         return Column(
           children: [
-            Row(
-              children: [
-                SizedBox(
-                  width: 80,
-                  child: Text(
-                    time,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: meal.title.isNotEmpty
-                      ? Container(
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(bottom: 8),
-                          decoration: BoxDecoration(
-                            color: meal.color,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    meal.title,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    meal.food,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                '${meal.calories} kcal',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : const SizedBox(height: 40),
-                ),
-              ],
+            // Bagian Perhitungan Kalori
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.grey[200],
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildCalorieBox('$goalCalories', 'Goal'),
+                  const Text('-', style: TextStyle(fontSize: 20)),
+                  _buildCalorieBox('$foodCalories', 'Food'),
+                  const Text('+', style: TextStyle(fontSize: 20)),
+                  _buildCalorieBox('$exerciseCalories', 'Exercise'),
+                  const Text('=', style: TextStyle(fontSize: 20)),
+                  _buildCalorieBox('$caloriesRemaining', 'Remaining'),
+                ],
+              ),
             ),
-            const Divider(height: 1),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: 24, // 24 jam
+                itemBuilder: (context, index) {
+                  final hour = index;
+                  final timeLabel =
+                      '${hour == 0 ? 12 : hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}';
+                  final meals = hourlyMeals[hour] ?? [];
+
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 80,
+                            child: Text(
+                              timeLabel,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: meals.isNotEmpty
+                                ? Column(
+                                    children: meals.map((meal) {
+                                      return Container(
+                                        padding: const EdgeInsets.all(16),
+                                        margin:
+                                            const EdgeInsets.only(bottom: 8),
+                                        decoration: BoxDecoration(
+                                          color: meal
+                                              .color, // Gunakan warna dari kategori
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  meal.title,
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  meal.food,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Text(
+                                              '${meal.calories} kcal',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  )
+                                : const SizedBox(
+                                    height:
+                                        40), // Slot kosong jika tidak ada data
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            bottom: 8), // Menambahkan padding bottom 8
+                        child: const Divider(
+                          height: 1,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ],
         );
       },
     );
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'breakfast':
+        return const Color(0xFFFFF9C4); // Warna kuning untuk breakfast
+      case 'lunch':
+        return const Color(0xFFFFE0B2); // Warna oranye untuk lunch
+      case 'dinner':
+        return const Color(0xFFE1BEE7); // Warna ungu untuk dinner
+      case 'snack':
+        return const Color(0xFFBBDEFB); // Warna biru untuk snack
+      default:
+        return const Color(0xFFE8F5E9); // Warna hijau untuk lainnya
+    }
   }
 
   void _showMonthPicker() {

@@ -1,8 +1,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_vertexai/firebase_vertexai.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_pro/blocs/food/bloc/food_bloc.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 class VisionScreen extends StatefulWidget {
@@ -20,11 +25,14 @@ class _VisionScreenState extends State<VisionScreen>
   bool isScanning = false;
   final PanelController _panelController = PanelController();
   Map<String, dynamic>? scanResults;
+  List<String> selectedFoods = [];
+  Map<String, String> foodCategories = {};
+  String? selectedCategory;
 
   @override
   void initState() {
     super.initState();
-    _initializeCamera();
+    _requestCameraPermission();
     _scanAnimationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -36,6 +44,26 @@ class _VisionScreenState extends State<VisionScreen>
     _scanAnimationController.dispose();
     cameraController?.dispose();
     super.dispose();
+  }
+
+  Future<void> _requestCameraPermission() async {
+    var status = await Permission.camera.status;
+    if (!status.isGranted) {
+      status = await Permission.camera.request();
+    }
+
+    if (!status.isGranted) {
+      // Tampilkan pesan kepada user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Camera permission is required to use this feature.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      // Inisialisasi kamera
+      _initializeCamera();
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -133,49 +161,162 @@ class _VisionScreenState extends State<VisionScreen>
         panel: _buildResultsPanel(),
         body: _buildCameraPreview(),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: !isScanning ? _scanImage : null,
-        backgroundColor: const Color(0xFF4CAF50),
-        child: Icon(
-          isScanning ? Icons.hourglass_bottom : Icons.camera,
-          color: Colors.white,
-        ),
-      ),
+      floatingActionButton: (scanResults == null)
+          ? FloatingActionButton(
+              onPressed: !isScanning ? _scanImage : null,
+              backgroundColor: const Color(0xFF4CAF50),
+              child: Icon(
+                isScanning ? Icons.hourglass_bottom : Icons.camera,
+                color: Colors.white,
+              ),
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
   Widget _buildResultsPanel() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+    return BlocProvider(
+      create: (context) => FoodBloc(FirebaseFirestore.instance),
+      child: BlocConsumer<FoodBloc, FoodState>(
+        listener: (context, state) {
+          if (state is FoodSavedState) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Foods saved successfully!')),
+            );
+            Navigator.pop(context);
+          } else if (state is FoodSaveErrorState) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error: ${state.message}')),
+            );
+          }
+        },
+        builder: (context, state) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-          ),
-          Expanded(
-            child: scanResults == null
-                ? const Center(
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+
+                // Pilihan kategori global hanya muncul jika hasil scan ada
+                if (scanResults != null) ...[
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
                     child: Text(
-                      'Take a photo to scan food',
+                      'Select a category for all selected foods:',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.grey,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  )
-                : _buildScanResults(),
-          ),
-        ],
+                  ),
+
+                  // Dropdown untuk kategori
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: DropdownButtonFormField<String>(
+                      value: selectedCategory,
+                      items: ['Breakfast', 'Lunch', 'Dinner', 'Snack']
+                          .map((category) => DropdownMenuItem<String>(
+                                value: category,
+                                child: Text(category),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedCategory = value;
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        labelText: 'Category',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+
+                Expanded(
+                  child: scanResults == null
+                      ? const Center(
+                          child: Text(
+                            'Take a photo to scan food',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            Expanded(child: _buildScanResults()),
+
+                            // Tombol Save hanya aktif jika kategori telah dipilih
+                            if (selectedFoods.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: ElevatedButton(
+                                  onPressed: selectedCategory == null
+                                      ? null
+                                      : () {
+                                          final user =
+                                              FirebaseAuth.instance.currentUser;
+                                          if (user != null) {
+                                            final List<Map<String, dynamic>>
+                                                foodsToSave =
+                                                selectedFoods.map((foodName) {
+                                              final foodDetails =
+                                                  scanResults?['detected_foods']
+                                                      .firstWhere((food) =>
+                                                          food['name'] ==
+                                                          foodName);
+                                              return {
+                                                'name': foodDetails['name'],
+                                                'calories':
+                                                    foodDetails['calories'],
+                                              };
+                                            }).toList();
+
+                                            // Tambahkan kategori global dan timestamp
+                                            context.read<FoodBloc>().add(
+                                                  SaveSelectedFoodsEvent(
+                                                    foodsToSave,
+                                                    selectedCategory!, // Kategori global
+                                                  ),
+                                                );
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                  content: Text(
+                                                      'Please login to save your selection.')),
+                                            );
+                                          }
+                                        },
+                                  child: state is FoodSavingState
+                                      ? const CircularProgressIndicator(
+                                          color: Colors.white,
+                                        )
+                                      : const Text('Save Selected Foods'),
+                                ),
+                              ),
+                          ],
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -195,12 +336,26 @@ class _VisionScreenState extends State<VisionScreen>
       itemCount: scanResults?['detected_foods'].length ?? 0,
       itemBuilder: (context, index) {
         final food = scanResults!['detected_foods'][index];
+        final foodName = food['name'];
+
         return Card(
           elevation: 2,
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
+            leading: Checkbox(
+              value: selectedFoods.contains(foodName),
+              onChanged: (isSelected) {
+                setState(() {
+                  if (isSelected == true) {
+                    selectedFoods.add(foodName);
+                  } else {
+                    selectedFoods.remove(foodName);
+                  }
+                });
+              },
+            ),
             title: Text(
-              food['name'],
+              foodName,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -211,8 +366,7 @@ class _VisionScreenState extends State<VisionScreen>
               style: TextStyle(color: Colors.grey[600]),
             ),
             trailing: Stack(
-              alignment:
-                  Alignment.center, // Untuk memastikan teks berada di tengah
+              alignment: Alignment.center,
               children: [
                 CircularProgressIndicator(
                   value: food['confidence'] / 100,
@@ -220,7 +374,7 @@ class _VisionScreenState extends State<VisionScreen>
                   color: const Color(0xFF4CAF50),
                 ),
                 Text(
-                  '${food['confidence']}%', // Menampilkan angka confidence
+                  '${food['confidence']}%',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
