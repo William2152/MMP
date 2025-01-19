@@ -39,18 +39,26 @@ class _AccountScreenState extends State<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authBloc = BlocProvider.of<AuthBloc>(context);
+      authBloc.add(CheckUserData());
+    });
     return BlocConsumer<AuthBloc, AuthState>(
-      listener: (context, state) {},
+      listener: (context, state) {
+        if (state is AuthUnauthenticated) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/',
+            (route) => false,
+          );
+        } else if (state is UserDataIncomplete) {
+          Navigator.pushReplacementNamed(context, '/weight');
+        }
+      },
       builder: (context, state) {
         if (state is AuthSuccess) {
-          print(
-              "-------------------------BLOC----------------------------------------");
-          print(state.user.gender);
           return _buildAuthenticatedUI(context, state.user);
         }
-        print(
-            "-------------------------BLOC----------------------------------------");
-        print(state.toString());
         return const Center(child: CircularProgressIndicator());
       },
     );

@@ -23,7 +23,7 @@ class AuthRepository {
 
       if (!userSnapshot.exists || !userSnapshot.data()!.containsKey('gender')) {
         await userDoc.set({
-          'gender': '',
+          'gender': 'not set',
         }, SetOptions(merge: true));
       }
     } else {
@@ -99,8 +99,9 @@ class AuthRepository {
         final int weight = data['weight'] ?? 0;
         final int height = data['height'] ?? 0;
         final int age = data['age'] ?? 0;
+        final String gender = data['gender'] ?? "not set";
 
-        return weight == 0 || height == 0 || age == 0;
+        return weight == 0 || height == 0 || age == 0 || gender == "not set";
       }
     }
 
@@ -150,17 +151,17 @@ class AuthRepository {
       );
 
       // Step 5: Save water settings with personalized goal
-      // final defaultWaterModel = WaterModel(
-      //   userId: user.id,
-      //   dailyGoal: _calculateWaterGoal(weight, age),
-      //   reminderInterval: 30,
-      //   selectedVolume: 250,
-      //   customVolume: 300,
-      //   selectedVolumeIndex: 0,
-      //   remindersEnabled: true,
-      // );
+      final defaultWaterModel = WaterModel(
+        userId: user.id,
+        dailyGoal: 2000,
+        reminderInterval: 30,
+        selectedVolume: 250,
+        customVolume: 300,
+        selectedVolumeIndex: 0,
+        remindersEnabled: true,
+      );
 
-      // await waterRepository.saveWaterModel(defaultWaterModel);
+      await waterRepository.saveWaterModel(defaultWaterModel);
       return user;
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
@@ -215,9 +216,6 @@ class AuthRepository {
       if (!userDoc.exists) {
         throw 'User data not found';
       }
-      print(
-          "---------------------------------------------------------------------");
-      print(userDoc.data().toString());
       return UserModel.fromJson(userDoc.data()!);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {

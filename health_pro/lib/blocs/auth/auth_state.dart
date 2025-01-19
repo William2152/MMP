@@ -64,9 +64,18 @@ class HeightUpdateError extends AuthState {
   List<Object> get props => [message];
 }
 
-class UserDataIncomplete extends AuthState {}
+class AgeUpdateSuccess extends AuthState {}
 
-class UserDataComplete extends AuthState {}
+class AgeUpdateError extends AuthState {
+  final String message;
+
+  const AgeUpdateError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class UserDataIncomplete extends AuthState {}
 
 class AuthRegistrationError extends AuthState {
   final String message;

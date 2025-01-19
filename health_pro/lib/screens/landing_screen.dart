@@ -92,9 +92,15 @@ class _LandingScreenState extends State<LandingScreen>
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authBloc = BlocProvider.of<AuthBloc>(context);
+      authBloc.add(CheckUserData());
+    });
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) async {
-        if (state is AuthSuccess && !_isNavigating) {
+        if (state is UserDataIncomplete && !_isNavigating) {
+          await _performNavigationWithAnimation('/weight');
+        } else if (state is AuthSuccess && !_isNavigating) {
           await _performNavigationWithAnimation('/home');
         } else if ((state is AuthUnauthenticated || state is AuthError) &&
             !_isNavigating) {

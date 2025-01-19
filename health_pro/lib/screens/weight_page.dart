@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:health_pro/blocs/auth/auth_bloc.dart';
-import 'package:health_pro/blocs/auth/auth_event.dart';
-import 'package:health_pro/blocs/auth/auth_state.dart';
 
-class WeightSelectorScreen extends StatefulWidget {
-  const WeightSelectorScreen({Key? key}) : super(key: key);
+class WeightPage extends StatefulWidget {
+  const WeightPage({Key? key}) : super(key: key);
 
   @override
-  _WeightSelectorScreenState createState() => _WeightSelectorScreenState();
+  State<WeightPage> createState() => _WeightPageState();
 }
 
-class _WeightSelectorScreenState extends State<WeightSelectorScreen> {
+class _WeightPageState extends State<WeightPage> {
   double currentWeight = 34.0;
   final ScrollController _scrollController = ScrollController();
   final double minWeight = 10.0;
@@ -55,6 +51,10 @@ class _WeightSelectorScreenState extends State<WeightSelectorScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -174,26 +174,7 @@ class _WeightSelectorScreenState extends State<WeightSelectorScreen> {
             padding: const EdgeInsets.all(20.0),
             child: ElevatedButton(
               onPressed: () {
-                final authBloc = BlocProvider.of<AuthBloc>(context);
-
-                authBloc.add(UpdateWeight(weight: currentWeight.toInt()));
-
-                // Tampilkan pesan atau navigasi ke halaman berikutnya setelah sukses
-                authBloc.stream.listen((state) {
-                  if (state is WeightUpdateSuccess) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Weight updated successfully!')),
-                    );
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      Navigator.pushReplacementNamed(context, '/height');
-                    });
-                  } else if (state is WeightUpdateError) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: ${state.message}')),
-                    );
-                  }
-                });
+                // Handle continue
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,

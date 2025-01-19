@@ -80,7 +80,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         emit(WeightUpdateSuccess());
       } catch (e) {
-        emit(WeightUpdateError(e.toString()));
+        emit(AuthError(e.toString()));
       }
     });
 
@@ -93,7 +93,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         emit(HeightUpdateSuccess());
       } catch (e) {
-        emit(HeightUpdateError(e.toString()));
+        emit(AuthError(e.toString()));
       }
     });
 
@@ -103,6 +103,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         // Perbarui usia pengguna di repository
         await _authRepository.updateAge(event.age);
+
+        emit(AgeUpdateSuccess());
       } catch (e) {
         emit(AuthError(e.toString()));
       }
@@ -118,7 +120,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (isIncomplete) {
           emit(UserDataIncomplete());
         } else {
-          emit(UserDataComplete());
+          final user = await _authRepository.getCurrentUser();
+          emit(AuthSuccess(user!));
         }
       } catch (e) {
         emit(AuthError(e.toString()));
@@ -131,6 +134,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         // Update gender in Firebase
         await _authRepository.updateGender(event.gender);
+
+        final user = await _authRepository.getCurrentUser();
+        emit(AuthSuccess(user!));
       } catch (e) {
         emit(AuthError(e.toString()));
       }
