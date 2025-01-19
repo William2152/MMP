@@ -14,39 +14,51 @@ class HeightSelectorScreen extends StatefulWidget {
 class _HeightSelectorScreenState extends State<HeightSelectorScreen>
     with SingleTickerProviderStateMixin {
   double currentHeight = 170; // Default height in cm
+
   double startDragY = 0;
+
   double startHeight = 170;
+
   late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+
     // Initialize controller to show 170cm
-    _controller.value = (currentHeight) / 500; // Full range 0-500
+
+    _controller.value =
+        1 - (currentHeight / 500); // Reverse the initial position
   }
 
   @override
   void dispose() {
     _controller.dispose();
+
     super.dispose();
   }
 
   void _onVerticalDragStart(DragStartDetails details) {
     startDragY = details.globalPosition.dy;
+
     startHeight = currentHeight;
   }
 
   void _onVerticalDragUpdate(DragUpdateDetails details) {
-    final dragDifference = startDragY - details.globalPosition.dy;
-    final heightDifference = dragDifference * 0.3; // Reduced sensitivity
+    final dragDifference = details.globalPosition.dy - startDragY;
+
+    final heightDifference =
+        dragDifference * 0.5; // Increased sensitivity for more precise control
 
     setState(() {
-      currentHeight = (startHeight + heightDifference).clamp(0.0, 500.0);
-      _controller.value = currentHeight / 500;
+      currentHeight = (startHeight - heightDifference).clamp(0.0, 500.0);
+
+      _controller.value = 1 - (currentHeight / 500); // Reverse the movement
     });
   }
 
