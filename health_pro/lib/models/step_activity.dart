@@ -30,7 +30,17 @@ class StepActivity extends Equatable {
       'distance': distance,
       'calories': calories,
       'date': date,
-      'isSynced': isSynced ? 1 : 0,
+      'lastUpdated': lastUpdated.toIso8601String(),
+    };
+  }
+
+  // New method for Firestore array object
+  Map<String, dynamic> toFirestoreMap() {
+    return {
+      'steps': steps,
+      'distance': distance,
+      'calories': calories,
+      'date': date,
       'lastUpdated': lastUpdated.toIso8601String(),
     };
   }
@@ -44,6 +54,22 @@ class StepActivity extends Equatable {
       calories: map['calories'],
       date: map['date'],
       isSynced: map['isSynced'] == 1,
+      lastUpdated: DateTime.parse(map['lastUpdated']),
+    );
+  }
+
+  // New factory for Firestore array object
+  factory StepActivity.fromFirestoreMap(
+      String userId, Map<String, dynamic> map) {
+    final date = map['date'] as String;
+    return StepActivity(
+      id: '${userId}_$date',
+      userId: userId,
+      steps: map['steps'],
+      distance: map['distance'],
+      calories: map['calories'],
+      date: date,
+      isSynced: true,
       lastUpdated: DateTime.parse(map['lastUpdated']),
     );
   }
