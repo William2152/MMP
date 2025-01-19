@@ -19,7 +19,11 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   late TextEditingController _heightController;
   late TextEditingController _weightController;
   late TextEditingController _ageController;
-  String _selectedGender = "";
+  String _selectedGender = '';
+  bool _isInitialized = false;
+
+  // Define gender options
+  final List<String> _genderOptions = ['Male', 'Female', 'Prefer not to say'];
 
   @override
   void initState() {
@@ -44,7 +48,10 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is AuthSuccess) {
-          _initControllers(state.user);
+          if (!_isInitialized) {
+            _initControllers(state.user);
+            _isInitialized = true;
+          }
           return _buildPersonalInfoUI(context, state.user);
         }
         return const Center(child: CircularProgressIndicator());
@@ -58,6 +65,9 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     _weightController.text = user.weight.toString();
     _ageController.text = user.age.toString();
     _selectedGender = user.gender;
+
+    // Debug print to verify initialization
+    print('Initialized gender to: ${user.gender}');
   }
 
   Widget _buildPersonalInfoUI(BuildContext context, UserModel user) {
@@ -86,7 +96,10 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
               setState(() {
                 _isEditing = !_isEditing;
                 if (!_isEditing) {
-                  _initControllers(user);
+                  final state = context.read<AuthBloc>().state;
+                  if (state is AuthSuccess) {
+                    _initControllers(state.user);
+                  }
                 }
               });
             },
@@ -159,7 +172,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
             Icons.monitor_weight, 'Weight', _weightController, 'kg'),
         _buildEditableInfoItem(Icons.height, 'Height', _heightController, 'cm'),
         _buildEditableInfoItem(Icons.cake, 'Age', _ageController, 'years'),
-        _buildGenderDropdown(),
+        _buildGenderInfoItem(Icons.person, 'Gender'),
       ],
     );
   }
@@ -255,13 +268,13 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     );
   }
 
-  Widget _buildGenderDropdown() {
+  Widget _buildGenderInfoItem(IconData icon, String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Icon(
-            Icons.person,
+            icon,
             color: Colors.green,
             size: 24,
           ),
@@ -270,29 +283,42 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Gender',
+                Text(
+                  title,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey,
+                    color: Colors.grey[600],
                   ),
                 ),
                 const SizedBox(height: 4),
                 _isEditing
-                    ? DropdownButton<String>(
-                        value: _selectedGender,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            _selectedGender = newValue!;
-                          });
-                        },
-                        items: <String>['Male', 'Female', 'Prefer not to say']
-                            .map<DropdownMenuItem<String>>((String value) {
+                    ? DropdownButtonFormField<String>(
+                        value: _selectedGender.isNotEmpty
+                            ? _selectedGender
+                            : _genderOptions[0], // Provide fallback
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(vertical: 8),
+                        ),
+                        items: _genderOptions.map((String gender) {
                           return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
+                            value: gender,
+                            child: Text(gender),
                           );
                         }).toList(),
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _selectedGender = newValue;
+                              print(
+                                  'Gender changed to: $newValue'); // Debug print
+                            });
+                          }
+                        },
                       )
                     : Text(
                         _selectedGender,
@@ -312,9 +338,13 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   void _saveChanges(BuildContext context, UserModel user) {
     final authBloc = context.read<AuthBloc>();
 
+    // Add debug print
+    print(
+        'Saving gender: $_selectedGender'); // Check if this shows the correct value
+
     authBloc.add(UpdateUserInformation(
       name: _nameController.text.trim(),
-      email: user.email, // Pastikan email tetap jika tidak diubah
+      email: user.email,
       weight: int.tryParse(_weightController.text) ?? user.weight,
       height: int.tryParse(_heightController.text) ?? user.height,
       age: int.tryParse(_ageController.text) ?? user.age,

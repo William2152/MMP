@@ -139,7 +139,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       try {
         emit(AuthLoading());
 
-        // Panggil fungsi di repository untuk memperbarui data pengguna
+        // Add debug print
+        print('Updating gender in bloc: ${event.gender}');
+
         await _authRepository.updateUserInfo(
           name: event.name,
           email: event.email,
@@ -149,8 +151,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           gender: event.gender,
         );
 
-        // Ambil data pengguna yang diperbarui
         final updatedUser = await _authRepository.getCurrentUser();
+        print(
+            'Updated user gender: ${updatedUser?.gender}'); // Check if gender is updated in response
 
         emit(UserInfoUpdateSuccess());
         emit(AuthSuccess(updatedUser!));
