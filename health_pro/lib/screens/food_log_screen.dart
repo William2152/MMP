@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:health_pro/widgets/custom_month_year_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../blocs/auth/auth_bloc.dart';
 import '../blocs/auth/auth_state.dart';
 import '../models/user_model.dart';
@@ -19,6 +20,26 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
   final ScrollController _dateScrollController = ScrollController();
   DateTime selectedDate = DateTime.now();
   List<DateTime> dates = [];
+
+  Future<void> _requestCameraPermission() async {
+    var status = await Permission.camera.status;
+    if (!status.isGranted) {
+      status = await Permission.camera.request();
+    }
+
+    if (!status.isGranted) {
+      // Tampilkan pesan kepada user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Camera permission is required to use this feature.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      await Future.delayed(const Duration(milliseconds: 500));
+      Navigator.pushNamed(context, '/vision');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +107,7 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
       floatingActionButton: _isToday(selectedDate)
           ? FloatingActionButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/vision');
+                _requestCameraPermission();
               },
               backgroundColor: const Color(0xFF4CAF50),
               child: const Icon(Icons.camera_alt),

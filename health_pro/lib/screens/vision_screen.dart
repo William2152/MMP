@@ -18,7 +18,7 @@ class VisionScreen extends StatefulWidget {
 }
 
 class _VisionScreenState extends State<VisionScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   List<CameraDescription> camera1 = [];
   CameraController? cameraController;
   late AnimationController _scanAnimationController;
@@ -32,7 +32,8 @@ class _VisionScreenState extends State<VisionScreen>
   @override
   void initState() {
     super.initState();
-    _requestCameraPermission();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeCamera();
     _scanAnimationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -41,28 +42,19 @@ class _VisionScreenState extends State<VisionScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scanAnimationController.dispose();
     cameraController?.dispose();
     super.dispose();
   }
 
-  Future<void> _requestCameraPermission() async {
-    var status = await Permission.camera.status;
-    if (!status.isGranted) {
-      status = await Permission.camera.request();
-    }
-
-    if (!status.isGranted) {
-      // Tampilkan pesan kepada user
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Camera permission is required to use this feature.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } else {
-      // Inisialisasi kamera
-      _initializeCamera();
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Reinitialize the camera when the app resumes
+      if (cameraController != null && !cameraController!.value.isInitialized) {
+        _initializeCamera();
+      }
     }
   }
 
