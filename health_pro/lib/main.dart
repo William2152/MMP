@@ -17,6 +17,7 @@ import 'package:health_pro/screens/home_screen.dart';
 import 'package:health_pro/screens/landing_screen.dart';
 import 'package:health_pro/screens/login_screen.dart';
 import 'package:health_pro/screens/onboarding_screen.dart';
+import 'package:health_pro/screens/personal_information_screen.dart';
 import 'package:health_pro/screens/vision_screen.dart';
 import 'package:health_pro/screens/water_screen.dart';
 import 'package:health_pro/screens/weight_selector_screen.dart';
@@ -233,6 +234,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               ),
           '/gender': (context) => NavigationWrapper(
                 screen: const GenderSelectionScreen(),
+                showBottomBar: true,
+              ),
+          '/personal': (context) => NavigationWrapper(
+                screen: PersonalInformationScreen(),
                 showBottomBar: true,
               ),
         },

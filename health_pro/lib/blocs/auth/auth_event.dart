@@ -1,5 +1,6 @@
 // lib/blocs/auth/auth_event.dart
 import 'package:equatable/equatable.dart';
+import 'package:health_pro/models/user_model.dart';
 
 abstract class AuthEvent extends Equatable {
   const AuthEvent();
@@ -72,6 +73,27 @@ class UpdateGender extends AuthEvent {
 
   @override
   List<Object> get props => [gender];
+}
+
+class UpdateUserInformation extends AuthEvent {
+  final String name;
+  final String email;
+  final int weight;
+  final int height;
+  final int age;
+  final String gender;
+
+  const UpdateUserInformation({
+    required this.name,
+    required this.email,
+    required this.weight,
+    required this.height,
+    required this.age,
+    required this.gender,
+  });
+
+  @override
+  List<Object> get props => [name, email, weight, height, age, gender];
 }
 
 class ResetAuthError extends AuthEvent {}

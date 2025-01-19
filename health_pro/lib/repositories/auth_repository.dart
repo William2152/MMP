@@ -12,6 +12,41 @@ class AuthRepository {
 
   AuthRepository({required this.waterRepository});
 
+  Future<void> updateUserInfo({
+    String? name,
+    String? email,
+    int? weight,
+    int? height,
+    int? age,
+    String? gender,
+  }) async {
+    final user = _auth.currentUser;
+
+    if (user != null) {
+      final userDoc = _firestore.collection('users').doc(user.uid);
+
+      // Siapkan data yang akan diperbarui
+      final updateData = <String, dynamic>{};
+      if (name != null) updateData['name'] = name;
+      if (email != null) {
+        // Perbarui email di Firebase Authentication
+        await user.updateEmail(email);
+        updateData['email'] = email;
+      }
+      if (weight != null) updateData['weight'] = weight;
+      if (height != null) updateData['height'] = height;
+      if (age != null) updateData['age'] = age;
+      if (gender != null) updateData['gender'] = gender;
+
+      // Perbarui data di Firestore
+      if (updateData.isNotEmpty) {
+        await userDoc.update(updateData);
+      }
+    } else {
+      throw Exception("User not logged in");
+    }
+  }
+
   Future<void> setDefaultGender() async {
     final user = FirebaseAuth.instance.currentUser;
 

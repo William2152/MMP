@@ -135,7 +135,9 @@ class _AccountScreenState extends State<AccountScreen> {
         _buildMenuItem(
           icon: Icons.person_outline,
           title: 'Personal Information',
-          onTap: () {},
+          onTap: () {
+            Navigator.pushNamed(context, '/personal');
+          },
         ),
         _buildMenuItem(
           icon: Icons.language,

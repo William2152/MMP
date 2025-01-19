@@ -128,6 +128,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
+    on<UpdateUserInformation>((event, emit) async {
+      try {
+        emit(AuthLoading());
+
+        // Panggil fungsi di repository untuk memperbarui data pengguna
+        await _authRepository.updateUserInfo(
+          name: event.name,
+          email: event.email,
+          weight: event.weight,
+          height: event.height,
+          age: event.age,
+          gender: event.gender,
+        );
+
+        // Ambil data pengguna yang diperbarui
+        final updatedUser = await _authRepository.getCurrentUser();
+
+        emit(UserInfoUpdateSuccess());
+        emit(AuthSuccess(updatedUser!));
+      } catch (e) {
+        emit(UserInfoUpdateError(e.toString()));
+      }
+    });
+
     on<UpdateGender>((event, emit) async {
       try {
         emit(AuthLoading());

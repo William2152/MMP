@@ -77,6 +77,17 @@ class AgeUpdateError extends AuthState {
 
 class UserDataIncomplete extends AuthState {}
 
+class UserInfoUpdateSuccess extends AuthState {}
+
+class UserInfoUpdateError extends AuthState {
+  final String message;
+
+  const UserInfoUpdateError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
 class AuthRegistrationError extends AuthState {
   final String message;
 
