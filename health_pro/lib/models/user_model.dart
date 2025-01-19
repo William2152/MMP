@@ -62,6 +62,7 @@ class UserModel {
     int? height,
     int? weight,
     int? age,
+    String? gender,
     Map<String, dynamic>? healthData,
     Map<String, dynamic>? preferences,
     DateTime? createdAt,

@@ -1,5 +1,6 @@
 // lib/blocs/auth/auth_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_pro/services/background_pedometer_service.dart';
 import '../../repositories/auth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
@@ -34,6 +35,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           email: event.email,
           password: event.password,
         );
+
+        await BackgroundPedometerService.updateUserId(user.id);
+
         emit(AuthSuccess(user));
       } catch (e) {
         emit(AuthError(e.toString()));
@@ -50,6 +54,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       try {
         emit(AuthLoading());
         await _authRepository.signOut();
+
+        await BackgroundPedometerService.clearUserId();
+
         emit(AuthUnauthenticated());
       } catch (e) {
         emit(AuthError(e.toString()));

@@ -16,3 +16,20 @@ class UpdateStepCount extends ActivityEvent {
 }
 
 class SyncActivities extends ActivityEvent {}
+
+// Event untuk menghapus data lama
+class DeleteOldData extends ActivityEvent {}
+
+// Event untuk mengupdate step goal
+class UpdateStepGoal extends ActivityEvent {
+  final int stepGoal;
+
+  UpdateStepGoal(this.stepGoal);
+}
+
+// Event untuk mengupdate step range
+class UpdateStepRange extends ActivityEvent {
+  final int stepRange;
+
+  UpdateStepRange(this.stepRange);
+}

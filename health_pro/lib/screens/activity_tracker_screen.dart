@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_pro/services/background_pedometer_service.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import '../blocs/auth/auth_bloc.dart';
@@ -20,9 +22,19 @@ class ActivityTrackerScreen extends StatefulWidget {
 
 class _ActivityTrackerScreenState extends State<ActivityTrackerScreen>
     with SingleTickerProviderStateMixin {
+  // Static ranges for settings
+  static const int _minStepGoal = 5000;
+  static const int _maxStepGoal = 20000;
+  static const double _minStepLength = 0.5;
+  static const double _maxStepLength = 1.0;
+
+  // SharedPreferences keys
+  static const String _stepGoalKey = 'step_goal';
+  static const String _stepLengthKey = 'step_length';
+
+  int _targetSteps = 10000;
   double _stepLength = 0.78;
   double _weight = 70.0;
-  int _targetSteps = 10000;
   StreamSubscription<StepCount>? _stepStream;
   late TabController _tabController;
   late ActivityBloc _activityBloc;
@@ -37,6 +49,7 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadSettings();
 
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthSuccess) {
@@ -50,7 +63,7 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen>
       _initializeCurrentSteps();
 
       // Set up periodic sync
-      _syncTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
+      _syncTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
         _activityBloc.add(SyncActivities());
       });
     }
@@ -79,6 +92,27 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen>
     _tabController.dispose();
     _syncTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _targetSteps = prefs.getInt(_stepGoalKey) ?? 10000;
+      _stepLength = prefs.getDouble(_stepLengthKey) ?? 0.78;
+    });
+  }
+
+  Future<void> _saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_stepGoalKey, _targetSteps);
+    await prefs.setDouble(_stepLengthKey, _stepLength);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Settings saved successfully!'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _requestActivityRecognitionPermission() async {
@@ -169,7 +203,7 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen>
     await _safelyDisposeStepStream();
     _isTracking = false;
 
-    await Future.delayed(const Duration(seconds: 5));
+    await Future.delayed(const Duration(milliseconds: 100));
     if (mounted) {
       _startTracking();
     }
@@ -177,6 +211,13 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen>
 
   double _calculateCalories(int steps) {
     return steps * _weight * 0.0005;
+  }
+
+  String _formatNumber(num value) {
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}k';
+    }
+    return value.toString();
   }
 
   @override
@@ -320,63 +361,237 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen>
   }
 
   Widget _buildSettingsTab() {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Step Goal Settings',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              const Text(
-                'Daily Step Goal:',
-                style: TextStyle(fontSize: 18, color: Colors.black),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Enter step goal',
+          // Step Goal Section
+          _buildSettingSection(
+            title: 'Daily Step Goal',
+            subtitle: 'Set your daily walking target',
+            child: Column(
+              children: [
+                Text(
+                  '${_formatNumber(_targetSteps)} steps',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF98D8AA),
                   ),
-                  onChanged: (value) {
-                    setState(() {
-                      _targetSteps = int.tryParse(value) ?? 10000;
-                    });
-                  },
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF98D8AA),
-              foregroundColor: Colors.black,
+                const SizedBox(height: 8),
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: const Color(0xFF98D8AA),
+                    inactiveTrackColor:
+                        const Color(0xFF98D8AA).withOpacity(0.2),
+                    thumbColor: const Color(0xFF98D8AA),
+                    overlayColor: const Color(0xFF98D8AA).withOpacity(0.1),
+                    valueIndicatorColor: const Color(0xFF98D8AA),
+                    valueIndicatorTextStyle:
+                        const TextStyle(color: Colors.white),
+                    showValueIndicator: ShowValueIndicator.always,
+                  ),
+                  child: Slider(
+                    value: _targetSteps.toDouble(),
+                    min: _minStepGoal.toDouble(),
+                    max: _maxStepGoal.toDouble(),
+                    divisions: 30,
+                    label: '${_formatNumber(_targetSteps)} steps',
+                    onChanged: (value) {
+                      setState(() {
+                        _targetSteps = value.round();
+                      });
+                    },
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_formatNumber(_minStepGoal)}',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    Text(
+                      '${_formatNumber(_maxStepGoal)}',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Step goal updated!')),
-              );
-            },
-            child: const Text('Save Step Goal'),
           ),
+
+          const SizedBox(height: 24),
+
+          // Step Length Section
+          _buildSettingSection(
+            title: 'Step Length',
+            subtitle:
+                'Adjust your average step length for accurate distance calculation',
+            child: Column(
+              children: [
+                Text(
+                  '${_stepLength.toStringAsFixed(2)} meters',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF98D8AA),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: const Color(0xFF98D8AA),
+                    inactiveTrackColor:
+                        const Color(0xFF98D8AA).withOpacity(0.2),
+                    thumbColor: const Color(0xFF98D8AA),
+                    overlayColor: const Color(0xFF98D8AA).withOpacity(0.1),
+                    valueIndicatorColor: const Color(0xFF98D8AA),
+                    valueIndicatorTextStyle:
+                        const TextStyle(color: Colors.white),
+                    showValueIndicator: ShowValueIndicator.always,
+                  ),
+                  child: Slider(
+                    value: _stepLength,
+                    min: _minStepLength,
+                    max: _maxStepLength,
+                    divisions: 50,
+                    label: '${_stepLength.toStringAsFixed(2)}m',
+                    onChanged: (value) {
+                      setState(() {
+                        _stepLength = value;
+                      });
+                      BackgroundPedometerService.updateStepLength(value);
+                    },
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${_minStepLength}m',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    Text(
+                      '${_maxStepLength}m',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Save Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF98D8AA),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 2,
+              ),
+              onPressed: _saveSettings,
+              child: const Text(
+                'Save Settings',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Help Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.tips_and_updates_outlined, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text(
+                      'Tips for accurate tracking',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '• Average step length for adults: 0.7 to 0.8 meters\n'
+                  '• A good daily goal starts from 7,000 to 10,000 steps\n'
+                  '• Adjust your goals gradually for better adherence',
+                  style: TextStyle(color: Colors.blue.shade700),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingSection({
+    required String title,
+    required String subtitle,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 16),
+          child,
         ],
       ),
     );
   }
 }
 
-// Keeping the existing CircleProgressPainter and InfoCard classes unchanged
 class CircleProgressPainter extends CustomPainter {
   final double progress;
 

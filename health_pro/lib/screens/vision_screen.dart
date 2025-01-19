@@ -7,7 +7,6 @@ import 'package:firebase_vertexai/firebase_vertexai.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_pro/blocs/food/bloc/food_bloc.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 class VisionScreen extends StatefulWidget {

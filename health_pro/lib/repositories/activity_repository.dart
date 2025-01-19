@@ -1,4 +1,3 @@
-// lib/repositories/activity_repository.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../database/database_helper.dart';
 import '../models/step_activity.dart';
@@ -7,7 +6,7 @@ class ActivityRepository {
   final DatabaseHelper _databaseHelper;
   final FirebaseFirestore _firestore;
   DateTime? _lastSyncTime;
-  static const syncInterval = Duration(minutes: 1);
+  static const syncInterval = Duration(milliseconds: 100);
   bool _isSyncing = false;
 
   ActivityRepository({
@@ -71,7 +70,9 @@ class ActivityRepository {
         'activities': activities,
       }, SetOptions(merge: true));
 
+      // Tandai aktivitas sebagai sudah disinkronkan di database lokal
       await _databaseHelper.markAsSynced(activity.id);
+
       _lastSyncTime = DateTime.now();
     } catch (e) {
       print('Error syncing activity: $e');
@@ -85,60 +86,20 @@ class ActivityRepository {
 
     try {
       _isSyncing = true;
+
+      // Ambil semua aktivitas yang belum disinkronkan dari database lokal
       final unsyncedActivities = await _databaseHelper.getUnsyncedActivities();
 
-      // Group activities by userId
-      final groupedActivities = <String, List<StepActivity>>{};
+      // Sinkronkan setiap aktivitas yang belum disinkronkan
       for (var activity in unsyncedActivities) {
-        groupedActivities.putIfAbsent(activity.userId, () => []).add(activity);
-      }
-
-      // Sync activities for each user
-      for (var entry in groupedActivities.entries) {
-        final userId = entry.key;
-        final activities = entry.value;
-
-        // Get the user document reference
-        final userDocRef = _firestore.collection('activities').doc(userId);
-
-        // Get current activities array
-        final docSnapshot = await userDocRef.get();
-        List<Map<String, dynamic>> firestoreActivities = [];
-
-        if (docSnapshot.exists) {
-          final data = docSnapshot.data() as Map<String, dynamic>;
-          firestoreActivities =
-              List<Map<String, dynamic>>.from(data['activities'] ?? []);
-        }
-
-        // Update activities
-        for (var activity in activities) {
-          final activityIndex =
-              firestoreActivities.indexWhere((a) => a['date'] == activity.date);
-          final activityMap = activity.toFirestoreMap();
-
-          if (activityIndex >= 0) {
-            firestoreActivities[activityIndex] = activityMap;
-          } else {
-            firestoreActivities.add(activityMap);
-          }
-
-          await _databaseHelper.markAsSynced(activity.id);
-        }
-
-        // Update Firestore document
-        await userDocRef.set({
-          'activities': firestoreActivities,
-        }, SetOptions(merge: true));
+        await _syncActivity(activity);
       }
 
       _lastSyncTime = DateTime.now();
+    } catch (e) {
+      print('Error syncing activities: $e');
     } finally {
       _isSyncing = false;
     }
-  }
-
-  Future<int> getLastStepCount(String userId) async {
-    return await _databaseHelper.getLastStepCount(userId);
   }
 }

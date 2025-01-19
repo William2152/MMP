@@ -21,6 +21,7 @@ import 'package:health_pro/screens/personal_information_screen.dart';
 import 'package:health_pro/screens/vision_screen.dart';
 import 'package:health_pro/screens/water_screen.dart';
 import 'package:health_pro/screens/weight_selector_screen.dart';
+import 'package:health_pro/services/background_pedometer_service.dart';
 import 'package:health_pro/widgets/navigation_wrapper.dart';
 import 'package:pedometer/pedometer.dart';
 import 'blocs/auth/auth_bloc.dart';
@@ -31,6 +32,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
+  await BackgroundPedometerService.initializeService();
   AwesomeNotifications().initialize(
     null,
     [
@@ -43,8 +45,8 @@ Future<void> main() async {
         playSound: true,
       ),
       NotificationChannel(
-        channelKey: 'activity_tracker',
-        channelName: 'Activity Tracker Notifications',
+        channelKey: 'step_counter',
+        channelName: 'Step Tracker Notifications',
         channelDescription: 'Notifications for activity tracker updates',
         defaultColor: Colors.green,
         importance: NotificationImportance.High,
@@ -53,68 +55,7 @@ Future<void> main() async {
     ],
   );
 
-  await initializeBackgroundService();
   runApp(MyApp());
-}
-
-@pragma('vm:entry-point')
-Future<void> onStart(ServiceInstance service) async {
-  // Set foreground notification immediately for Android
-  if (service is AndroidServiceInstance) {
-    // Must be called within 5 seconds on Android
-    await service.setAsForegroundService();
-    await service.setForegroundNotificationInfo(
-      title: "HealthPro Pedometer",
-      content: "Tracking steps in background...",
-    );
-  }
-
-  final repository = ActivityRepository();
-
-  try {
-    Pedometer.stepCountStream.listen((StepCount event) {
-      final steps = event.steps;
-      final distance = steps * 0.78 / 1000;
-      final calories = steps * 0.05;
-      final now = DateTime.now();
-
-      repository.saveActivity(StepActivity(
-        id: 'background_${now.toIso8601String()}',
-        userId: 'current_user_id',
-        steps: steps,
-        distance: distance,
-        calories: calories,
-        date: now.toIso8601String(),
-        lastUpdated: now,
-        isSynced: false,
-      ));
-    }, onError: (error) {
-      print('Pedometer error: $error');
-    });
-  } catch (e) {
-    print('Error initializing step counter: $e');
-  }
-}
-
-Future<void> initializeBackgroundService() async {
-  final service = FlutterBackgroundService();
-
-  await service.configure(
-    androidConfiguration: AndroidConfiguration(
-      onStart: onStart,
-      isForegroundMode: true,
-      autoStart: true,
-      autoStartOnBoot: true,
-      foregroundServiceNotificationId: 888, // Add a unique notification ID
-    ),
-    iosConfiguration: IosConfiguration(
-      onForeground: onStart,
-      onBackground: (service) => true,
-      autoStart: true,
-    ),
-  );
-
-  await service.startService();
 }
 
 class MyApp extends StatefulWidget {

@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:health_pro/models/water_model.dart';
 import 'package:health_pro/repositories/water_repository.dart';
 import '../models/user_model.dart';
@@ -28,11 +27,6 @@ class AuthRepository {
       // Siapkan data yang akan diperbarui
       final updateData = <String, dynamic>{};
       if (name != null) updateData['name'] = name;
-      if (email != null) {
-        // Perbarui email di Firebase Authentication
-        await user.updateEmail(email);
-        updateData['email'] = email;
-      }
       if (weight != null) updateData['weight'] = weight;
       if (height != null) updateData['height'] = height;
       if (age != null) updateData['age'] = age;

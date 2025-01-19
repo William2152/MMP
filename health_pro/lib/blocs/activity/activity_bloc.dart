@@ -3,6 +3,7 @@ import 'package:health_pro/blocs/activity/activity_event.dart';
 import 'package:health_pro/blocs/activity/activity_state.dart';
 import 'package:health_pro/models/step_activity.dart';
 import 'package:health_pro/repositories/activity_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
   final ActivityRepository _repository;
@@ -84,10 +85,14 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
       final dateStr =
           "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
 
+      // Get stepLength and weight from SharedPreferences
+      final stepLength = await _getStepLength();
+      final weight = await _getBodyWeight();
+
       // Calculate new values based on accumulated steps
-      final distance =
-          (_accumulatedSteps * 0.78) / 1000; // using stepLength 0.78
-      final calories = _accumulatedSteps * 70.0 * 0.0005; // using weight 70.0
+      final distance = (_accumulatedSteps * stepLength) / 1000; // Convert to km
+      final double MET = 3.5; // MET value for walking
+      final calories = _accumulatedSteps * stepLength * weight * MET / 1000;
 
       final updatedActivity = StepActivity(
         id: '${_userId}_$dateStr',
@@ -119,5 +124,16 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
       // Log sync error but don't emit error state
       print('Sync error: $e');
     }
+  }
+
+  // Helper methods to get stepLength and weight from SharedPreferences
+  Future<double> _getStepLength() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble('step_length') ?? 0.78; // Default 0.78 meters
+  }
+
+  Future<double> _getBodyWeight() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble('body_weight') ?? 70.0; // Default 70.0 kg
   }
 }
