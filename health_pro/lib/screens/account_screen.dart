@@ -40,19 +40,17 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is AuthUnauthenticated) {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/',
-            (route) => false,
-          );
-        }
-      },
+      listener: (context, state) {},
       builder: (context, state) {
         if (state is AuthSuccess) {
+          print(
+              "-------------------------BLOC----------------------------------------");
+          print(state.user.gender);
           return _buildAuthenticatedUI(context, state.user);
         }
+        print(
+            "-------------------------BLOC----------------------------------------");
+        print(state.toString());
         return const Center(child: CircularProgressIndicator());
       },
     );

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:health_pro/models/water_model.dart';
 import 'package:health_pro/repositories/water_repository.dart';
 import '../models/user_model.dart';
@@ -11,14 +12,107 @@ class AuthRepository {
 
   AuthRepository({required this.waterRepository});
 
+  Future<void> setDefaultGender() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      final userDoc =
+          FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+      final userSnapshot = await userDoc.get();
+
+      if (!userSnapshot.exists || !userSnapshot.data()!.containsKey('gender')) {
+        await userDoc.set({
+          'gender': '',
+        }, SetOptions(merge: true));
+      }
+    } else {
+      throw Exception("User not logged in");
+    }
+  }
+
+  Future<void> updateGender(String gender) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      final userDoc =
+          FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+      await userDoc.update({
+        'gender': gender,
+      });
+    } else {
+      throw Exception("User not logged in");
+    }
+  }
+
+  Future<void> updateHeight(int height) async {
+    final user = _auth.currentUser;
+
+    if (user != null) {
+      final userDoc = _firestore.collection('users').doc(user.uid);
+
+      await userDoc.update({
+        'height': height,
+      });
+    } else {
+      throw Exception("User not logged in");
+    }
+  }
+
+  Future<void> updateAge(int age) async {
+    final user = _auth.currentUser;
+
+    if (user != null) {
+      final userDoc = _firestore.collection('users').doc(user.uid);
+
+      await userDoc.update({
+        'age': age,
+      });
+    } else {
+      throw Exception("User not logged in");
+    }
+  }
+
+  Future<void> updateWeight(int weight) async {
+    final user = _auth.currentUser;
+
+    if (user != null) {
+      final userDoc = _firestore.collection('users').doc(user.uid);
+
+      await userDoc.update({
+        'weight': weight,
+      });
+    } else {
+      throw Exception("User not logged in");
+    }
+  }
+
+  Future<bool> isUserDataIncomplete() async {
+    final user = _auth.currentUser;
+
+    if (user != null) {
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+      if (userDoc.exists) {
+        final data = userDoc.data()!;
+        final int weight = data['weight'] ?? 0;
+        final int height = data['height'] ?? 0;
+        final int age = data['age'] ?? 0;
+
+        return weight == 0 || height == 0 || age == 0;
+      }
+    }
+
+    throw Exception("User not logged in or data not found");
+  }
+
   // Register User
   Future<UserModel> registerUser({
     required String email,
     required String password,
     required String name,
-    required int age,
-    required int weight,
-    required int height,
+    required String gender,
   }) async {
     try {
       // Step 1: Create user in Firebase Auth
@@ -36,9 +130,10 @@ class AuthRepository {
         id: userCredential.user!.uid,
         email: email,
         name: name,
-        age: age,
-        weight: weight,
-        height: height,
+        age: 0,
+        weight: 0,
+        height: 0,
+        gender: gender,
         createdAt: DateTime.now(),
       );
 
@@ -55,17 +150,17 @@ class AuthRepository {
       );
 
       // Step 5: Save water settings with personalized goal
-      final defaultWaterModel = WaterModel(
-        userId: user.id,
-        dailyGoal: _calculateWaterGoal(weight, age),
-        reminderInterval: 30,
-        selectedVolume: 250,
-        customVolume: 300,
-        selectedVolumeIndex: 0,
-        remindersEnabled: true,
-      );
+      // final defaultWaterModel = WaterModel(
+      //   userId: user.id,
+      //   dailyGoal: _calculateWaterGoal(weight, age),
+      //   reminderInterval: 30,
+      //   selectedVolume: 250,
+      //   customVolume: 300,
+      //   selectedVolumeIndex: 0,
+      //   remindersEnabled: true,
+      // );
 
-      await waterRepository.saveWaterModel(defaultWaterModel);
+      // await waterRepository.saveWaterModel(defaultWaterModel);
       return user;
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
@@ -120,7 +215,9 @@ class AuthRepository {
       if (!userDoc.exists) {
         throw 'User data not found';
       }
-
+      print(
+          "---------------------------------------------------------------------");
+      print(userDoc.data().toString());
       return UserModel.fromJson(userDoc.data()!);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {

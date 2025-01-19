@@ -14,7 +14,8 @@
     <application
         android:label="health_pro"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
         <service
         android:name="com.ryanheise.androidservice.FlutterBackgroundService"
         android:exported="true"

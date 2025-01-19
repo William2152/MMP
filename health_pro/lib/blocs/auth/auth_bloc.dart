@@ -17,9 +17,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           email: event.email,
           password: event.password,
           name: event.name,
-          age: event.age,
-          weight: event.weight,
-          height: event.height,
+          gender: event.gender,
         );
 
         emit(AuthRegistrationSuccess(user));
@@ -68,6 +66,71 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         } else {
           emit(AuthUnauthenticated());
         }
+      } catch (e) {
+        emit(AuthError(e.toString()));
+      }
+    });
+
+    on<UpdateWeight>((event, emit) async {
+      try {
+        emit(AuthLoading());
+
+        // Perbarui berat badan pengguna di repository
+        await _authRepository.updateWeight(event.weight);
+
+        emit(WeightUpdateSuccess());
+      } catch (e) {
+        emit(WeightUpdateError(e.toString()));
+      }
+    });
+
+    on<UpdateHeight>((event, emit) async {
+      try {
+        emit(AuthLoading());
+
+        // Perbarui tinggi badan pengguna di repository
+        await _authRepository.updateHeight(event.height);
+
+        emit(HeightUpdateSuccess());
+      } catch (e) {
+        emit(HeightUpdateError(e.toString()));
+      }
+    });
+
+    on<UpdateAge>((event, emit) async {
+      try {
+        emit(AuthLoading());
+
+        // Perbarui usia pengguna di repository
+        await _authRepository.updateAge(event.age);
+      } catch (e) {
+        emit(AuthError(e.toString()));
+      }
+    });
+
+    on<CheckUserData>((event, emit) async {
+      try {
+        emit(AuthLoading());
+
+        // Memanggil fungsi repository untuk memeriksa data
+        final isIncomplete = await _authRepository.isUserDataIncomplete();
+
+        if (isIncomplete) {
+          emit(UserDataIncomplete());
+        } else {
+          emit(UserDataComplete());
+        }
+      } catch (e) {
+        emit(AuthError(e.toString()));
+      }
+    });
+
+    on<UpdateGender>((event, emit) async {
+      try {
+        emit(AuthLoading());
+
+        // Update gender in Firebase
+        await _authRepository.updateGender(event.gender);
       } catch (e) {
         emit(AuthError(e.toString()));
       }

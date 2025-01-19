@@ -42,6 +42,32 @@ class AuthRegistrationSuccess extends AuthState {
   List<Object> get props => [user];
 }
 
+class WeightUpdateSuccess extends AuthState {}
+
+class WeightUpdateError extends AuthState {
+  final String message;
+
+  const WeightUpdateError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class HeightUpdateSuccess extends AuthState {}
+
+class HeightUpdateError extends AuthState {
+  final String message;
+
+  const HeightUpdateError(this.message);
+
+  @override
+  List<Object> get props => [message];
+}
+
+class UserDataIncomplete extends AuthState {}
+
+class UserDataComplete extends AuthState {}
+
 class AuthRegistrationError extends AuthState {
   final String message;
 

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_pro/blocs/auth/auth_bloc.dart';
+import 'package:health_pro/blocs/auth/auth_event.dart';
+import 'package:health_pro/blocs/auth/auth_state.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 
@@ -7,34 +11,50 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authBloc = BlocProvider.of<AuthBloc>(context);
+      authBloc.add(CheckUserData());
+    });
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'Today',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: const Text(
+            'Today',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildFoodLogFocus(),
-              const SizedBox(height: 24),
-              _buildDailyStats(context),
-            ],
+        body: BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state is UserDataIncomplete) {
+              // Redirect to /weight if data is incomplete
+              Navigator.pushReplacementNamed(context, '/weight');
+            } else if (state is AuthError) {
+              // Show error message if any
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message)),
+              );
+            }
+          },
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFoodLogFocus(),
+                  const SizedBox(height: 24),
+                  _buildDailyStats(context),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 
   Widget _buildFoodLogFocus() {

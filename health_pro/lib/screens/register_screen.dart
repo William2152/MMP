@@ -17,10 +17,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _ageController = TextEditingController();
-  final _weightController = TextEditingController();
-  final _heightController = TextEditingController();
-
   void _showSuccessDialog() {
     showDialog(
       context: context,
@@ -79,52 +75,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _nameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _ageController.dispose();
-    _weightController.dispose();
-    _heightController.dispose();
     super.dispose();
-  }
-
-  String? _validateAge(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Age is required';
-    }
-    final age = int.tryParse(value);
-    if (age == null) {
-      return 'Please enter a valid number';
-    }
-    if (age < 1 || age > 120) {
-      return 'Please enter a reasonable age (1-120)';
-    }
-    return null;
-  }
-
-  String? _validateWeight(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Weight is required';
-    }
-    final weight = double.tryParse(value);
-    if (weight == null) {
-      return 'Please enter a valid number';
-    }
-    if (weight < 20 || weight > 300) {
-      return 'Please enter a reasonable weight (20-300 kg)';
-    }
-    return null;
-  }
-
-  String? _validateHeight(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Height is required';
-    }
-    final height = double.tryParse(value);
-    if (height == null) {
-      return 'Please enter a valid number';
-    }
-    if (height < 50 || height > 250) {
-      return 'Please enter a reasonable height (50-250 cm)';
-    }
-    return null;
   }
 
   @override
@@ -145,7 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             } else if (state is AuthSuccess) {
               // After successful login, navigate to home
               Navigator.of(context).pop(); // Close dialog if open
-              Navigator.pushReplacementNamed(context, '/home');
+              Navigator.pushReplacementNamed(context, '/weight');
             } else if (state is AuthRegistrationError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -253,34 +204,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                       hintText: 'Confirm your password',
                     ),
-                    const SizedBox(height: 20),
-
-                    _buildTextField(
-                      label: 'Age',
-                      controller: _ageController,
-                      keyboardType: TextInputType.number,
-                      validator: _validateAge,
-                      hintText: 'Enter your age',
-                      suffix: 'years',
-                    ),
-                    const SizedBox(height: 20),
-                    _buildTextField(
-                      label: 'Weight',
-                      controller: _weightController,
-                      keyboardType: TextInputType.number,
-                      validator: _validateWeight,
-                      hintText: 'Enter your weight',
-                      suffix: 'kg',
-                    ),
-                    const SizedBox(height: 20),
-                    _buildTextField(
-                      label: 'Height',
-                      controller: _heightController,
-                      keyboardType: TextInputType.number,
-                      validator: _validateHeight,
-                      hintText: 'Enter your height',
-                      suffix: 'cm',
-                    ),
                     const SizedBox(height: 30),
 
                     // Register Button
@@ -300,12 +223,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                               name: _nameController.text,
                                               password:
                                                   _passwordController.text,
-                                              age: int.parse(
-                                                  _ageController.text),
-                                              weight: int.parse(
-                                                  _weightController.text),
-                                              height: int.parse(
-                                                  _heightController.text),
+                                              gender: 'not set',
                                             ),
                                           );
                                     }

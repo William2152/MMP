@@ -7,6 +7,7 @@ class UserModel {
   final int weight;
   final int height;
   final int age;
+  final String gender;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -17,6 +18,7 @@ class UserModel {
     required this.weight,
     required this.height,
     required this.age,
+    required this.gender,
     required this.createdAt,
     this.updatedAt,
   });
@@ -30,6 +32,7 @@ class UserModel {
       'height': height,
       'weight': weight,
       'age': age,
+      'gender': gender,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -44,6 +47,7 @@ class UserModel {
       height: json['height'],
       weight: json['weight'],
       age: json['age'],
+      gender: json['gender'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt:
           json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
@@ -70,6 +74,7 @@ class UserModel {
       height: height ?? this.height,
       weight: weight ?? this.weight,
       age: age ?? this.age,
+      gender: gender ?? this.gender,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

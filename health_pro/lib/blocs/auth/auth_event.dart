@@ -12,21 +12,17 @@ class RegisterUser extends AuthEvent {
   final String email;
   final String name;
   final String password;
-  final int age;
-  final int weight;
-  final int height;
+  final String gender;
 
   const RegisterUser({
     required this.email,
     required this.name,
     required this.password,
-    required this.age,
-    required this.weight,
-    required this.height,
+    required this.gender,
   });
 
   @override
-  List<Object> get props => [email, name, password, age, weight, height];
+  List<Object> get props => [email, name, password, gender];
 }
 
 class LoginUser extends AuthEvent {
@@ -42,7 +38,45 @@ class LoginUser extends AuthEvent {
   List<Object> get props => [email, password];
 }
 
+class UpdateWeight extends AuthEvent {
+  final int weight;
+
+  const UpdateWeight({required this.weight});
+
+  @override
+  List<Object> get props => [weight];
+}
+
+class UpdateHeight extends AuthEvent {
+  final int height;
+
+  const UpdateHeight({required this.height});
+
+  @override
+  List<Object> get props => [height];
+}
+
+class UpdateAge extends AuthEvent {
+  final int age;
+
+  const UpdateAge({required this.age});
+
+  @override
+  List<Object> get props => [age];
+}
+
+class UpdateGender extends AuthEvent {
+  final String gender;
+
+  const UpdateGender({required this.gender});
+
+  @override
+  List<Object> get props => [gender];
+}
+
 class ResetAuthError extends AuthEvent {}
+
+class CheckUserData extends AuthEvent {}
 
 class SignOut extends AuthEvent {}
 

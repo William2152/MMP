@@ -9,13 +9,17 @@ import 'package:health_pro/repositories/activity_repository.dart';
 import 'package:health_pro/repositories/water_repository.dart';
 import 'package:health_pro/screens/account_screen.dart';
 import 'package:health_pro/screens/activity_tracker_screen.dart';
+import 'package:health_pro/screens/birth_year_selector_screen.dart';
 import 'package:health_pro/screens/food_log_screen.dart';
+import 'package:health_pro/screens/gender_selection_screen.dart';
+import 'package:health_pro/screens/height_selector_screen.dart';
 import 'package:health_pro/screens/home_screen.dart';
 import 'package:health_pro/screens/landing_screen.dart';
 import 'package:health_pro/screens/login_screen.dart';
 import 'package:health_pro/screens/onboarding_screen.dart';
 import 'package:health_pro/screens/vision_screen.dart';
 import 'package:health_pro/screens/water_screen.dart';
+import 'package:health_pro/screens/weight_selector_screen.dart';
 import 'package:health_pro/widgets/navigation_wrapper.dart';
 import 'package:pedometer/pedometer.dart';
 import 'blocs/auth/auth_bloc.dart';
@@ -213,6 +217,22 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               ),
           '/vision': (context) => NavigationWrapper(
                 screen: const VisionScreen(),
+                showBottomBar: true,
+              ),
+          '/height': (context) => NavigationWrapper(
+                screen: const HeightSelectorScreen(),
+                showBottomBar: true,
+              ),
+          '/birth': (context) => NavigationWrapper(
+                screen: const BirthYearSelectorScreen(),
+                showBottomBar: true,
+              ),
+          '/weight': (context) => NavigationWrapper(
+                screen: const WeightSelectorScreen(),
+                showBottomBar: true,
+              ),
+          '/gender': (context) => NavigationWrapper(
+                screen: const GenderSelectionScreen(),
                 showBottomBar: true,
               ),
         },
