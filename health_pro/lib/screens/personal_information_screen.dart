@@ -286,7 +286,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                             _selectedGender = newValue!;
                           });
                         },
-                        items: <String>['male', 'female', 'prefer not to say']
+                        items: <String>['Male', 'Female', 'Prefer not to say']
                             .map<DropdownMenuItem<String>>((String value) {
                           return DropdownMenuItem<String>(
                             value: value,
