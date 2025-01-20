@@ -31,14 +31,12 @@ class _ActivityTrackerScreenState extends State<ActivityTrackerScreen>
 
   int _targetSteps = 10000;
   double _stepLength = 0.78;
-  double _weight = 70.0;
   StreamSubscription<StepCount>? _stepStream;
   late TabController _tabController;
   late ActivityBloc _activityBloc;
   Timer? _syncTimer;
 
   // Track both device steps and our calculated steps
-  int? _deviceInitialSteps;
   int _currentSteps = 0;
   bool _isTracking = false;
 

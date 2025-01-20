@@ -55,4 +55,12 @@ class MainActivity: FlutterActivity(), SensorEventListener {
         sensorManager.unregisterListener(this)
         super.onDestroy()
     }
+
+    // kalo bikin error buang aja ini
+    override fun onResume() {
+        super.onResume()
+        stepSensor?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+    }
 }

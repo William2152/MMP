@@ -92,6 +92,35 @@ class TrackerTab extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: const Text(
+              'To track your steps, simply keep the app open on the Activity screen (this screen). '
+              'You can lock your screen to save battery. '
+              'Try walking a few steps to ensure your steps are being tracked.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
       ],
     );
   }
