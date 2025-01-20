@@ -83,12 +83,14 @@ class _GenderSelectionScreenState extends State<GenderSelectionScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
+                    disabledBackgroundColor: Colors.grey,
                   ),
                   child: const Text(
                     'Continue',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),

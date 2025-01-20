@@ -156,7 +156,6 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
 
   // Fungsi untuk mendapatkan semua hari dalam bulan tertentu
   List<DateTime> _getDaysInMonth(DateTime date) {
-    final firstDayOfMonth = DateTime(date.year, date.month, 1);
     final lastDayOfMonth = DateTime(date.year, date.month + 1, 0);
     final daysInMonth = lastDayOfMonth.day;
 
@@ -279,7 +278,7 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
 
   Widget _buildTimelineView(UserModel user) {
     final userId = user.id;
-    final int goalCalories = user.caloriesGoal ?? 2000; // Ambil goal dari user
+    final int goalCalories = user.caloriesGoal; // Ambil goal dari user
 
     final startOfDay =
         DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
@@ -363,53 +362,56 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
                           ),
                           Expanded(
                             child: meals.isNotEmpty
-                                ? Column(
-                                    children: meals.map((meal) {
-                                      return Container(
-                                        padding: const EdgeInsets.all(16),
-                                        margin:
-                                            const EdgeInsets.only(bottom: 8),
-                                        decoration: BoxDecoration(
-                                          color: meal.color,
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  meal.title,
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
+                                ? Container(
+                                    margin: const EdgeInsets.only(top: 8),
+                                    child: Column(
+                                      children: meals.map((meal) {
+                                        return Container(
+                                          padding: const EdgeInsets.all(16),
+                                          margin:
+                                              const EdgeInsets.only(bottom: 8),
+                                          decoration: BoxDecoration(
+                                            color: meal.color,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    meal.title,
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
                                                   ),
-                                                ),
-                                                Text(
-                                                  meal.food,
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Colors.grey[600],
+                                                  Text(
+                                                    meal.food,
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color: Colors.grey[600],
+                                                    ),
                                                   ),
-                                                ),
-                                              ],
-                                            ),
-                                            Text(
-                                              '${meal.calories} kcal',
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
+                                                ],
                                               ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList(),
-                                  )
+                                              Text(
+                                                '${meal.calories} kcal',
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ))
                                 : const SizedBox(height: 40),
                           ),
                         ],

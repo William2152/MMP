@@ -197,16 +197,18 @@ class _WeightSelectorScreenState extends State<WeightSelectorScreen> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 15),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                disabledBackgroundColor: Colors.grey,
               ),
               child: const Text(
                 'Continue',
                 style: TextStyle(
+                  color: Colors.white,
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

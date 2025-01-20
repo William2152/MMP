@@ -404,7 +404,20 @@ class _VisionScreenState extends State<VisionScreen>
         Content.multi([
           InlineDataPart('image/jpeg', imageData),
           TextPart(
-            'You are an AI food recognition model. Analyze the provided image of food and return a JSON response that includes the following information: 1) status (string): Indicate the status of the operation as "success" if food is detected or "error" if no food is detected. 2) detected_foods (array): A list of detected foods. For each detected food, include: 2.1) name (string): The name of the detected food, e.g., "Nasi Goreng" 2.2) confidence (integer): AI confidence score in percentage (0–100). 2.3)calories (decimal 2): The estimated calories of the food in kcal, rounded to two decimal places. Instructions: Use high-quality food recognition algorithms to identify the food in the image. Ensure the confidence score and calorie estimates are accurate and precise. If the image contains no recognizable food, return a status of "error" and an empty detected_foods array.',
+            'You are an AI food recognition model. Analyze the provided image and return a JSON response that includes the following information: '
+            '1) status (string): Indicate the status of the operation as "success" if any food or beverage is detected or "error" if no food or beverage is detected. '
+            '2) detected_foods (array): A list of detected food items, beverages, or packaged foods. For each detected item, include: '
+            '2.1) name (string): The name of the detected item, e.g., "Nasi Goreng", "Fried Chicken", "Coca-Cola", or "Potato Chips". '
+            '2.2) confidence (integer): AI confidence score in percentage (0–100). '
+            '2.3) calories (decimal 2): The estimated calories of the item in kcal, rounded to two decimal places. Estimate calories based on standard serving sizes and typical preparation methods. '
+            'Instructions: '
+            '- Detect both complete dishes and individual food components. If no complete dish is found, detect individual ingredients or components. '
+            '- If the image contains multiple food items, beverages, or packaged foods, return all detected items. '
+            '- Include beverages (e.g., coffee, tea, soda) and packaged foods (e.g., chips, cookies) in the detection. '
+            '- If similar dishes or items are detected (e.g., "Sate" and "Yakitori"), include all of them as long as they are visually distinct. '
+            '- Ensure calorie estimates are realistic and based on standard serving sizes. Avoid returning calorie values above 1000 unless the item is known to be extremely high in calories. '
+            '- If the image contains non-food items, ignore them and focus only on food, beverages, or packaged foods. '
+            '- Use high-quality food recognition algorithms to ensure accurate and precise results.',
           ),
         ]),
       ];

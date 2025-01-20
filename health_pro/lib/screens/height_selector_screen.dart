@@ -52,13 +52,16 @@ class _HeightSelectorScreenState extends State<HeightSelectorScreen>
   void _onVerticalDragUpdate(DragUpdateDetails details) {
     final dragDifference = details.globalPosition.dy - startDragY;
 
+    // Balikkan arah perhitungan dengan menambahkan heightDifference
     final heightDifference =
         dragDifference * 0.5; // Increased sensitivity for more precise control
 
     setState(() {
-      currentHeight = (startHeight - heightDifference).clamp(0.0, 500.0);
+      // Tambahkan heightDifference ke startHeight untuk membalikkan arah swipe
+      currentHeight = (startHeight + heightDifference).clamp(0.0, 500.0);
 
-      _controller.value = 1 - (currentHeight / 500); // Reverse the movement
+      // Perbarui nilai controller
+      _controller.value = (currentHeight / 500);
     });
   }
 
@@ -184,7 +187,7 @@ class _HeightSelectorScreenState extends State<HeightSelectorScreen>
                   backgroundColor: Colors.black,
                   minimumSize: const Size(double.infinity, 56),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: const Text(

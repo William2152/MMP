@@ -119,6 +119,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         )
       ],
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         navigatorKey: _navigatorKey,
         title: 'HealthPro App',
         theme: ThemeData(

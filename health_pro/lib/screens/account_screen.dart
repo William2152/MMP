@@ -86,7 +86,7 @@ class _AccountScreenState extends State<AccountScreen> {
             _buildProfileSection(user),
             const SizedBox(height: 32),
             _buildAccountSection(),
-            _buildNotificationSection(),
+            // _buildNotificationSection(), // Commented out notification section
             _buildMoreSection(context),
             const SizedBox(height: 20),
           ],
@@ -145,59 +145,59 @@ class _AccountScreenState extends State<AccountScreen> {
           trailing: 'English (US)',
           onTap: () {},
         ),
-        _buildMenuItem(
-          icon: Icons.privacy_tip_outlined,
-          title: 'Privacy Policy',
-          onTap: () {},
-        ),
-        _buildMenuItem(
-          icon: Icons.settings_outlined,
-          title: 'Setting',
-          onTap: () {},
-        ),
+        // _buildMenuItem(
+        //   icon: Icons.privacy_tip_outlined,
+        //   title: 'Privacy Policy',
+        //   onTap: () {},
+        // ), // Commented out privacy policy
+        // _buildMenuItem(
+        //   icon: Icons.settings_outlined,
+        //   title: 'Setting',
+        //   onTap: () {},
+        // ), // Commented out setting
       ],
     );
   }
 
-  Widget _buildNotificationSection() {
-    return _buildSection(
-      'Notifications',
-      [
-        _buildSwitchMenuItem(
-          icon: Icons.notifications_none,
-          title: 'Push Notifications',
-          value: pushNotifications,
-          onChanged: (value) {
-            setState(() {
-              pushNotifications = value;
-            });
-            _saveNotificationSetting('pushNotifications', value);
-          },
-        ),
-        _buildSwitchMenuItem(
-          icon: Icons.campaign_outlined,
-          title: 'Promotional Notifications',
-          value: promoNotifications,
-          onChanged: (value) {
-            setState(() {
-              promoNotifications = value;
-            });
-            _saveNotificationSetting('promoNotifications', value);
-          },
-        ),
-      ],
-    );
-  }
+  // Widget _buildNotificationSection() {
+  //   return _buildSection(
+  //     'Notifications',
+  //     [
+  //       _buildSwitchMenuItem(
+  //         icon: Icons.notifications_none,
+  //         title: 'Push Notifications',
+  //         value: pushNotifications,
+  //         onChanged: (value) {
+  //           setState(() {
+  //             pushNotifications = value;
+  //           });
+  //           _saveNotificationSetting('pushNotifications', value);
+  //         },
+  //       ),
+  //       _buildSwitchMenuItem(
+  //         icon: Icons.campaign_outlined,
+  //         title: 'Promotional Notifications',
+  //         value: promoNotifications,
+  //         onChanged: (value) {
+  //           setState(() {
+  //             promoNotifications = value;
+  //           });
+  //           _saveNotificationSetting('promoNotifications', value);
+  //         },
+  //       ),
+  //     ],
+  //   );
+  // } // Commented out notification section
 
   Widget _buildMoreSection(BuildContext context) {
     return _buildSection(
       'More',
       [
-        _buildMenuItem(
-          icon: Icons.help_outline,
-          title: 'Help Center',
-          onTap: () {},
-        ),
+        // _buildMenuItem(
+        //   icon: Icons.help_outline,
+        //   title: 'Help Center',
+        //   onTap: () {},
+        // ), // Commented out help center
         _buildMenuItem(
           icon: Icons.logout,
           title: 'Log Out',
@@ -267,30 +267,30 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  Widget _buildSwitchMenuItem({
-    required IconData icon,
-    required String title,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: Colors.green,
-        size: 24,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          color: Colors.black87,
-        ),
-      ),
-      trailing: CupertinoSwitch(
-        value: value,
-        onChanged: onChanged,
-        activeColor: Colors.green,
-      ),
-    );
-  }
+  // Widget _buildSwitchMenuItem({
+  //   required IconData icon,
+  //   required String title,
+  //   required bool value,
+  //   required ValueChanged<bool> onChanged,
+  // }) {
+  //   return ListTile(
+  //     leading: Icon(
+  //       icon,
+  //       color: Colors.green,
+  //       size: 24,
+  //     ),
+  //     title: Text(
+  //       title,
+  //       style: TextStyle(
+  //         fontSize: 16,
+  //         color: Colors.black87,
+  //       ),
+  //     ),
+  //     trailing: CupertinoSwitch(
+  //       value: value,
+  //       onChanged: onChanged,
+  //       activeColor: Colors.green,
+  //     ),
+  //   );
+  // } // Commented out switch menu item
 }
