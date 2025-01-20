@@ -8,6 +8,7 @@ class UserModel {
   final int height;
   final int age;
   final String gender;
+  final int caloriesGoal;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -19,6 +20,7 @@ class UserModel {
     required this.height,
     required this.age,
     required this.gender,
+    required this.caloriesGoal,
     required this.createdAt,
     this.updatedAt,
   });
@@ -33,6 +35,7 @@ class UserModel {
       'weight': weight,
       'age': age,
       'gender': gender,
+      'caloriesGoal': caloriesGoal,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -48,6 +51,7 @@ class UserModel {
       weight: json['weight'],
       age: json['age'],
       gender: json['gender'],
+      caloriesGoal: json['caloriesGoal'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt:
           json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
@@ -62,6 +66,7 @@ class UserModel {
     int? height,
     int? weight,
     int? age,
+    int? caloriesGoal,
     String? gender,
     Map<String, dynamic>? healthData,
     Map<String, dynamic>? preferences,
@@ -75,6 +80,7 @@ class UserModel {
       height: height ?? this.height,
       weight: weight ?? this.weight,
       age: age ?? this.age,
+      caloriesGoal: caloriesGoal ?? this.caloriesGoal,
       gender: gender ?? this.gender,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:health_pro/widgets/custom_month_year_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -49,16 +48,30 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
           // Initialize dates list if not already done
           if (dates.isEmpty) {
             selectedDate = DateTime.now();
-            dates = List.generate(
-              7,
-              (index) => DateTime.now().subtract(Duration(days: 3 - index)),
-            );
+            dates =
+                _getDaysInMonth(selectedDate); // Ambil semua hari dalam bulan
+            // Scroll ke tanggal hari ini
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _scrollToSelectedDate();
+            });
           }
           return _buildMainUI(state.user);
         }
         return const Center(child: CircularProgressIndicator());
       },
     );
+  }
+
+  // Fungsi untuk scroll ke tanggal yang dipilih
+  void _scrollToSelectedDate() {
+    final index = dates.indexWhere((date) => date.day == selectedDate.day);
+    if (index != -1) {
+      _dateScrollController.animateTo(
+        index * 68.0, // Sesuaikan dengan lebar item tanggal
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   Widget _buildMainUI(UserModel user) {
@@ -100,7 +113,7 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
         children: [
           _buildDateSelector(),
           Expanded(
-            child: _buildTimelineView(),
+            child: _buildTimelineView(user),
           ),
         ],
       ),
@@ -132,13 +145,24 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
       onDateSelected: (DateTime date) {
         setState(() {
           selectedDate = date;
-          // Reset dates list untuk kalendar harian
-          dates = List.generate(
-            7,
-            (index) => date.subtract(Duration(days: 3 - index)),
-          );
+          // Reset dates list untuk semua hari dalam bulan yang dipilih
+          dates = _getDaysInMonth(date);
+          // Scroll ke tanggal yang dipilih
+          _scrollToSelectedDate();
         });
       },
+    );
+  }
+
+  // Fungsi untuk mendapatkan semua hari dalam bulan tertentu
+  List<DateTime> _getDaysInMonth(DateTime date) {
+    final firstDayOfMonth = DateTime(date.year, date.month, 1);
+    final lastDayOfMonth = DateTime(date.year, date.month + 1, 0);
+    final daysInMonth = lastDayOfMonth.day;
+
+    return List.generate(
+      daysInMonth,
+      (index) => DateTime(date.year, date.month, index + 1),
     );
   }
 
@@ -195,11 +219,9 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
     );
   }
 
-  Widget _buildCaloriesRemaining(int totalFoodCalories) {
-    const int goalCalories = 2000; // Ganti sesuai kebutuhan
-    const int exerciseCalories = 0; // Tambahkan jika ada data olahraga
-    final int remainingCalories =
-        goalCalories - totalFoodCalories + exerciseCalories;
+  Widget _buildCaloriesRemaining(int goalCalories, int totalFoodCalories) {
+    final int remainingCalories = goalCalories - totalFoodCalories;
+    final bool isOvershoot = remainingCalories < 0;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -220,10 +242,12 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
               _buildCalorieBox('$goalCalories', 'Goal'),
               const Text('-', style: TextStyle(fontSize: 20)),
               _buildCalorieBox('$totalFoodCalories', 'Food'),
-              const Text('+', style: TextStyle(fontSize: 20)),
-              _buildCalorieBox('$exerciseCalories', 'Exercise'),
               const Text('=', style: TextStyle(fontSize: 20)),
-              _buildCalorieBox('$remainingCalories', 'Remaining'),
+              _buildCalorieBox(
+                isOvershoot ? '${-remainingCalories}' : '$remainingCalories',
+                isOvershoot ? 'Overshoot' : 'Remaining',
+                color: isOvershoot ? Colors.red : const Color(0xFF8BC34A),
+              ),
             ],
           ),
         ],
@@ -231,7 +255,7 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
     );
   }
 
-  Widget _buildCalorieBox(String value, String label) {
+  Widget _buildCalorieBox(String value, String label, {Color? color}) {
     return Column(
       children: [
         Text(
@@ -239,8 +263,7 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color:
-                label == 'Remaining' ? const Color(0xFF8BC34A) : Colors.black,
+            color: color ?? Colors.black,
           ),
         ),
         Text(
@@ -254,19 +277,16 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
     );
   }
 
-  Widget _buildTimelineView() {
-    final userId =
-        (BlocProvider.of<AuthBloc>(context).state as AuthSuccess).user.id;
+  Widget _buildTimelineView(UserModel user) {
+    final userId = user.id;
+    final int goalCalories = user.caloriesGoal ?? 2000; // Ambil goal dari user
 
-    // Hitung awal dan akhir hari dari tanggal yang dipilih
     final startOfDay =
         DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     final endOfDay = DateTime(
         selectedDate.year, selectedDate.month, selectedDate.day, 23, 59, 59);
 
-    const int goalCalories = 2000; // Target kalori statis (bisa disesuaikan)
-    int foodCalories = 0; // Total kalori makanan
-    int exerciseCalories = 0; // Kalori yang dibakar dari latihan
+    int totalFoodCalories = 0; // Total kalori makanan untuk hari yang dipilih
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -281,9 +301,8 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        // Siapkan daftar per jam (kosong jika tidak ada data)
         final Map<int, List<_MealEntry>> hourlyMeals = Map.fromIterable(
-          List.generate(24, (index) => index), // Jam 0 - 23
+          List.generate(24, (index) => index),
           key: (hour) => hour,
           value: (hour) => [],
         );
@@ -295,52 +314,33 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
             final data = doc.data() as Map<String, dynamic>;
             final foods = data['foods'] as List<dynamic>;
             final timestamp = (data['timestamp'] as Timestamp).toDate();
-
-            // Ambil jam dari timestamp
             final hour = timestamp.hour;
+            final category = data['category'] as String;
 
             for (var food in foods) {
-              final calories = (food['calories'] as num).toDouble();
+              final calories = (food['calories'] as num).toInt();
               hourlyMeals[hour]?.add(_MealEntry(
                 time: DateFormat('h:mm a').format(timestamp),
-                title: data['category'], // Menggunakan kategori
+                title: category,
                 food: food['name'],
-                calories: calories,
-                color: _getCategoryColor(
-                    data['category']), // Warna berdasarkan kategori
+                calories: calories.toDouble(),
+                color: _getCategoryColor(category),
               ));
-              foodCalories += calories.toInt(); // Tambahkan kalori makanan
+
+              // Tambahkan kalori ke total
+              totalFoodCalories += calories;
             }
           }
         }
 
-        // Hitung Calories Remaining
-        final int caloriesRemaining =
-            goalCalories - foodCalories + exerciseCalories;
-
         return Column(
           children: [
-            // Bagian Perhitungan Kalori
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.grey[200],
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildCalorieBox('$goalCalories', 'Goal'),
-                  const Text('-', style: TextStyle(fontSize: 20)),
-                  _buildCalorieBox('$foodCalories', 'Food'),
-                  const Text('+', style: TextStyle(fontSize: 20)),
-                  _buildCalorieBox('$exerciseCalories', 'Exercise'),
-                  const Text('=', style: TextStyle(fontSize: 20)),
-                  _buildCalorieBox('$caloriesRemaining', 'Remaining'),
-                ],
-              ),
-            ),
+            // Tampilkan kalori remaining
+            _buildCaloriesRemaining(goalCalories, totalFoodCalories),
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: 24, // 24 jam
+                itemCount: 24,
                 itemBuilder: (context, index) {
                   final hour = index;
                   final timeLabel =
@@ -370,8 +370,7 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
                                         margin:
                                             const EdgeInsets.only(bottom: 8),
                                         decoration: BoxDecoration(
-                                          color: meal
-                                              .color, // Gunakan warna dari kategori
+                                          color: meal.color,
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
@@ -400,7 +399,7 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
                                               ],
                                             ),
                                             Text(
-                                              '${meal.calories} cal',
+                                              '${meal.calories} kcal',
                                               style: const TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.bold,
@@ -411,19 +410,11 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
                                       );
                                     }).toList(),
                                   )
-                                : const SizedBox(
-                                    height:
-                                        40), // Slot kosong jika tidak ada data
+                                : const SizedBox(height: 40),
                           ),
                         ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(
-                            bottom: 8), // Menambahkan padding bottom 8
-                        child: const Divider(
-                          height: 1,
-                        ),
-                      ),
+                      const Divider(height: 1),
                     ],
                   );
                 },
@@ -448,72 +439,6 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
       default:
         return const Color(0xFFE8F5E9); // Warna hijau untuk lainnya
     }
-  }
-
-  void _showMonthPicker() {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Container(
-          height: 300,
-          color: Colors.white,
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Colors.grey[300]!,
-                      width: 1,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    const Text(
-                      'Select Month',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Done'),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: CupertinoPicker(
-                  itemExtent: 40,
-                  onSelectedItemChanged: (index) {
-                    setState(() {
-                      selectedDate = DateTime(
-                          selectedDate.year, index + 1, selectedDate.day);
-                    });
-                  },
-                  children: List.generate(12, (index) {
-                    return Center(
-                      child: Text(
-                        DateFormat('MMMM').format(DateTime(2024, index + 1)),
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 }
 

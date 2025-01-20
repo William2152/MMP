@@ -19,6 +19,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   late TextEditingController _heightController;
   late TextEditingController _weightController;
   late TextEditingController _ageController;
+  late TextEditingController _caloriesController;
   String _selectedGender = '';
   bool _isInitialized = false;
 
@@ -32,6 +33,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     _heightController = TextEditingController();
     _weightController = TextEditingController();
     _ageController = TextEditingController();
+    _caloriesController = TextEditingController();
   }
 
   @override
@@ -40,6 +42,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     _heightController.dispose();
     _weightController.dispose();
     _ageController.dispose();
+    _caloriesController.dispose();
     super.dispose();
   }
 
@@ -64,6 +67,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     _heightController.text = user.height.toString();
     _weightController.text = user.weight.toString();
     _ageController.text = user.age.toString();
+    _caloriesController.text = user.caloriesGoal.toString();
     _selectedGender = user.gender;
 
     // Debug print to verify initialization
@@ -173,6 +177,8 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         _buildEditableInfoItem(Icons.height, 'Height', _heightController, 'cm'),
         _buildEditableInfoItem(Icons.cake, 'Age', _ageController, 'years'),
         _buildGenderInfoItem(Icons.person, 'Gender'),
+        _buildEditableInfoItem(
+            Icons.food_bank, 'Calories Goal', _caloriesController, 'kcal'),
       ],
     );
   }
@@ -348,6 +354,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
       weight: int.tryParse(_weightController.text) ?? user.weight,
       height: int.tryParse(_heightController.text) ?? user.height,
       age: int.tryParse(_ageController.text) ?? user.age,
+      caloriesGoal: int.tryParse(_caloriesController.text) ?? user.caloriesGoal,
       gender: _selectedGender,
     ));
 

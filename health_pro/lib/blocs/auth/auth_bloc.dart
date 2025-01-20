@@ -157,6 +157,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           weight: event.weight,
           height: event.height,
           age: event.age,
+          caloriesGoal: event.caloriesGoal,
           gender: event.gender,
         );
 
@@ -182,7 +183,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await _authRepository.updateGender(event.gender);
 
         final user = await _authRepository.getCurrentUser();
-        emit(AuthSuccess(user!));
+
+        double caloriesGoal = 0;
+        user!.gender == "Male"
+            ? caloriesGoal = 88.4 +
+                13.4 * user.weight.toDouble() +
+                4.8 * user.height.toDouble() -
+                (5.68 * user.age)
+            : caloriesGoal = 447.6 +
+                9.25 * user.weight.toDouble() +
+                3.1 * user.height.toDouble() -
+                (4.33 * user.age);
+
+        await _authRepository.updateCaloriesGoal(caloriesGoal.toInt());
+
+        emit(AuthSuccess(user));
       } catch (e) {
         emit(AuthError(e.toString()));
       }

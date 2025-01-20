@@ -80,6 +80,7 @@ class UpdateUserInformation extends AuthEvent {
   final int weight;
   final int height;
   final int age;
+  final int caloriesGoal;
   final String gender;
 
   const UpdateUserInformation({
@@ -88,11 +89,13 @@ class UpdateUserInformation extends AuthEvent {
     required this.weight,
     required this.height,
     required this.age,
+    required this.caloriesGoal,
     required this.gender,
   });
 
   @override
-  List<Object> get props => [name, email, weight, height, age, gender];
+  List<Object> get props =>
+      [name, email, weight, height, age, caloriesGoal, gender];
 }
 
 class ResetAuthError extends AuthEvent {}

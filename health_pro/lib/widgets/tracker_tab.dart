@@ -81,7 +81,7 @@ class TrackerTab extends StatelessWidget {
             children: [
               InfoCard(
                 title: 'Calories Burned',
-                value: '${activity.calories.toStringAsFixed(2)} cal',
+                value: '${activity.calories.toStringAsFixed(2)} kcal',
                 icon: Icons.local_fire_department,
               ),
               InfoCard(

@@ -18,6 +18,7 @@ class AuthRepository {
     int? height,
     int? age,
     String? gender,
+    int? caloriesGoal,
   }) async {
     final user = _auth.currentUser;
 
@@ -30,6 +31,7 @@ class AuthRepository {
       if (weight != null) updateData['weight'] = weight;
       if (height != null) updateData['height'] = height;
       if (age != null) updateData['age'] = age;
+      if (caloriesGoal != null) updateData['caloriesGoal'] = caloriesGoal;
       if (gender != null) updateData['gender'] = gender;
 
       // Perbarui data di Firestore
@@ -103,6 +105,20 @@ class AuthRepository {
     }
   }
 
+  Future<void> updateCaloriesGoal(int caloriesGoal) async {
+    final user = _auth.currentUser;
+
+    if (user != null) {
+      final userDoc = _firestore.collection('users').doc(user.uid);
+
+      await userDoc.update({
+        'caloriesGoal': caloriesGoal,
+      });
+    } else {
+      throw Exception("User not logged in");
+    }
+  }
+
   Future<void> updateWeight(int weight) async {
     final user = _auth.currentUser;
 
@@ -164,6 +180,7 @@ class AuthRepository {
         weight: 0,
         height: 0,
         gender: gender,
+        caloriesGoal: 2000,
         createdAt: DateTime.now(),
       );
 
@@ -210,21 +227,21 @@ class AuthRepository {
   }
 
   // Calculate daily water goal based on weight and age
-  int _calculateWaterGoal(int weight, int age) {
-    int dailyGoal = (weight * 35); // Standar: 30ml per kg berat badan
-    if (age < 18) {
-      dailyGoal += 500; // Tambah 500 ml untuk remaja
-    } else if (age > 55) {
-      dailyGoal -= 500; // Kurangi 500 ml untuk usia lanjut
-    }
+  // int _calculateWaterGoal(int weight, int age) {
+  //   int dailyGoal = (weight * 35); // Standar: 30ml per kg berat badan
+  //   if (age < 18) {
+  //     dailyGoal += 500; // Tambah 500 ml untuk remaja
+  //   } else if (age > 55) {
+  //     dailyGoal -= 500; // Kurangi 500 ml untuk usia lanjut
+  //   }
 
-    // Pastikan dailyGoal kelipatan 50
-    if (dailyGoal % 50 != 0) {
-      dailyGoal =
-          ((dailyGoal + 25) / 50).floor() * 50; // Pembulatan ke kelipatan 50
-    }
-    return dailyGoal;
-  }
+  //   // Pastikan dailyGoal kelipatan 50
+  //   if (dailyGoal % 50 != 0) {
+  //     dailyGoal =
+  //         ((dailyGoal + 25) / 50).floor() * 50; // Pembulatan ke kelipatan 50
+  //   }
+  //   return dailyGoal;
+  // }
 
   // login user
   Future<UserModel> loginUser({
