@@ -400,7 +400,7 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
                                               ],
                                             ),
                                             Text(
-                                              '${meal.calories} kcal',
+                                              '${meal.calories} cal',
                                               style: const TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.bold,

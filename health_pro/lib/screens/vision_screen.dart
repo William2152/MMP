@@ -353,7 +353,7 @@ class _VisionScreenState extends State<VisionScreen>
               ),
             ),
             subtitle: Text(
-              '${food['calories']} kcal',
+              '${food['calories']} cal',
               style: TextStyle(color: Colors.grey[600]),
             ),
             trailing: Stack(
@@ -404,7 +404,7 @@ class _VisionScreenState extends State<VisionScreen>
         Content.multi([
           InlineDataPart('image/jpeg', imageData),
           TextPart(
-            'You are an AI food recognition model. Analyze the provided image of food and return a JSON response that includes the following information: 1) status (string): Indicate the status of the operation as "success" if food is detected or "error" if no food is detected. 2) detected_foods (array): A list of detected foods. For each detected food, include: 2.1) name (string): The name of the detected food, e.g., "Nasi Goreng" 2.2) confidence (integer): AI confidence score in percentage (0–100). 2.3)calories (decimal 2): The estimated calories of the food in kcal, rounded to two decimal places. Instructions: Use high-quality food recognition algorithms to identify the food in the image. Ensure the confidence score and calorie estimates are accurate and precise. If the image contains no recognizable food, return a status of "error" and an empty detected_foods array.',
+            'You are an AI food recognition model. Analyze the provided image of food and return a JSON response that includes the following information: 1) status (string): Indicate the status of the operation as "success" if food is detected or "error" if no food is detected. 2) detected_foods (array): A list of detected foods. For each detected food, include: 2.1) name (string): The name of the detected food, e.g., "Nasi Goreng" 2.2) confidence (integer): AI confidence score in percentage (0–100). 2.3)calories (decimal 2): The estimated calories of the food in cal, rounded to two decimal places. Instructions: Use high-quality food recognition algorithms to identify the food in the image. Ensure the confidence score and calorie estimates are accurate and precise. If the image contains no recognizable food, return a status of "error" and an empty detected_foods array.',
           ),
         ]),
       ];

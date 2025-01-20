@@ -102,4 +102,24 @@ class ActivityRepository {
       _isSyncing = false;
     }
   }
+
+  Future<List<StepActivity>> getAllActivities(String userId) async {
+    // Implementasi untuk mengambil semua aktivitas dari Firestore atau local database
+    // Contoh untuk Firestore:
+    final snapshot = await FirebaseFirestore.instance
+        .collection('activities')
+        .doc(userId)
+        .get();
+
+    if (snapshot.exists) {
+      final activitiesData = snapshot.data()?['activities'] as List<dynamic>?;
+      if (activitiesData != null) {
+        return activitiesData
+            .map((activity) => StepActivity.fromFirestoreMap(userId, activity))
+            .toList();
+      }
+    }
+
+    return []; // Return empty list jika tidak ada data
+  }
 }

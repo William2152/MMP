@@ -30,3 +30,9 @@ class ActivityError extends ActivityState {
   @override
   List<Object?> get props => [message];
 }
+
+class ActivitiesLoaded extends ActivityState {
+  final List<StepActivity> activities;
+
+  ActivitiesLoaded(this.activities);
+}

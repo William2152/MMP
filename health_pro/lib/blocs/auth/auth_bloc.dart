@@ -36,6 +36,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           password: event.password,
         );
 
+        await BackgroundPedometerService.updateBodyWeight(
+            user.weight.toDouble());
+
         await BackgroundPedometerService.updateUserId(user.id);
 
         emit(AuthSuccess(user));
@@ -56,6 +59,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await _authRepository.signOut();
 
         await BackgroundPedometerService.clearUserId();
+
+        await BackgroundPedometerService.updateBodyWeight(70.0);
 
         emit(AuthUnauthenticated());
       } catch (e) {
@@ -84,6 +89,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         // Perbarui berat badan pengguna di repository
         await _authRepository.updateWeight(event.weight);
+
+        // Simpan berat badan ke SharedPreferences
+        await BackgroundPedometerService.updateBodyWeight(
+            event.weight.toDouble());
 
         emit(WeightUpdateSuccess());
       } catch (e) {
@@ -150,6 +159,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           age: event.age,
           gender: event.gender,
         );
+
+        await BackgroundPedometerService.updateBodyWeight(
+            event.weight.toDouble());
 
         final updatedUser = await _authRepository.getCurrentUser();
         print(

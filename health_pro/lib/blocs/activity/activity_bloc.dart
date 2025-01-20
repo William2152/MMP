@@ -20,6 +20,7 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
     on<LoadTodayActivity>(_onLoadTodayActivity);
     on<UpdateStepCount>(_onUpdateStepCount);
     on<SyncActivities>(_onSyncActivities);
+    on<LoadAllActivities>(_onLoadAllActivities); // Tambahkan ini
   }
 
   Future<void> _onLoadTodayActivity(
@@ -123,6 +124,26 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
     } catch (e) {
       // Log sync error but don't emit error state
       print('Sync error: $e');
+    }
+  }
+
+  Future<void> _onLoadAllActivities(
+    LoadAllActivities event,
+    Emitter<ActivityState> emit,
+  ) async {
+    try {
+      emit(ActivityLoading());
+
+      // Load all activities from Firestore
+      final activities = await _repository.getAllActivities(_userId);
+
+      if (activities.isNotEmpty) {
+        emit(ActivitiesLoaded(activities));
+      } else {
+        emit(ActivitiesLoaded([])); // Return empty list if no data
+      }
+    } catch (e) {
+      emit(ActivityError(e.toString()));
     }
   }
 

@@ -9,7 +9,7 @@ import 'package:health_pro/blocs/water/water_event.dart';
 import 'package:health_pro/blocs/water/water_state.dart';
 import 'package:health_pro/models/water_model.dart';
 import 'package:health_pro/widgets/hydration_progress.dart';
-import 'package:health_pro/widgets/settings_tab.dart';
+import 'package:health_pro/widgets/water_settings_tab.dart';
 import 'package:health_pro/widgets/water_analytics_tab.dart';
 import 'package:health_pro/widgets/water_volume_selection.dart';
 import 'package:intl/intl.dart';

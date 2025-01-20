@@ -1,17 +1,14 @@
 // lib/blocs/activity/activity_event.dart
-abstract class ActivityEvent {}
+abstract class ActivityEvent {
+  const ActivityEvent(); // Tambahkan constructor const
+}
 
 class LoadTodayActivity extends ActivityEvent {}
 
 class UpdateStepCount extends ActivityEvent {
   final int steps;
-  final double distance;
-  final double calories;
-
   UpdateStepCount({
     required this.steps,
-    required this.distance,
-    required this.calories,
   });
 }
 
@@ -32,4 +29,8 @@ class UpdateStepRange extends ActivityEvent {
   final int stepRange;
 
   UpdateStepRange(this.stepRange);
+}
+
+class LoadAllActivities extends ActivityEvent {
+  const LoadAllActivities();
 }
